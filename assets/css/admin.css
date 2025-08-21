@@ -1,0 +1,514 @@
+/**
+ * OVM Admin Styles
+ */
+
+.ovm-admin-wrap {
+    max-width: 100%;
+    margin: 20px 20px 20px 0;
+}
+
+.ovm-admin-wrap .nav-tab-wrapper {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ccc;
+}
+
+.ovm-count-badge {
+    display: inline-block;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    margin-left: 4px;
+    border-radius: 9px;
+    background-color: #ca4a1f;
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+    text-align: center;
+    vertical-align: top;
+}
+
+.nav-tab-active .ovm-count-badge {
+    background-color: #fff;
+    color: #000;
+}
+
+.ovm-filters {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.ovm-page-filter {
+    min-width: 200px;
+}
+
+.ovm-export-btn {
+    margin-left: auto;
+}
+
+.ovm-comments-table {
+    margin-top: 10px;
+    table-layout: auto;
+}
+
+.ovm-comments-table th,
+.ovm-comments-table td {
+    padding: 10px;
+    vertical-align: top;
+}
+
+.ovm-comments-table .check-column {
+    width: 2.2em;
+    padding: 10px 0 10px 3px;
+}
+
+.ovm-comments-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.ovm-author-name {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    cursor: help;
+}
+
+.ovm-rating {
+    color: #ffb900;
+    font-size: 14px;
+    display: block;
+}
+
+.ovm-comment-content {
+    max-width: 400px;
+}
+
+.ovm-comment-content.has-more {
+    position: relative;
+}
+
+.ovm-content-truncated {
+    line-height: 1.4;
+}
+
+.ovm-content-full {
+    line-height: 1.4;
+    margin-top: 10px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.ovm-toggle-content {
+    display: inline-block;
+    margin-top: 5px;
+    color: #0073aa;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.ovm-toggle-content:hover {
+    text-decoration: underline;
+}
+
+.ovm-admin-response {
+    width: 100%;
+    min-width: 250px;
+    max-width: 400px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    transition: border-color 0.3s;
+}
+
+.ovm-admin-response:focus {
+    border-color: #0073aa;
+    box-shadow: 0 0 0 1px #0073aa;
+    outline: none;
+}
+
+.ovm-admin-response.saving {
+    background-color: #fffbf0;
+    border-color: #ffb900;
+}
+
+.ovm-save-indicator {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.ovm-save-indicator.saving {
+    opacity: 1;
+    background: url(../../images/spinner.gif) no-repeat center;
+    background-size: 20px 20px;
+}
+
+.ovm-save-indicator.saved {
+    opacity: 1;
+    color: #46b450;
+}
+
+.ovm-save-indicator.saved::before {
+    content: "✓";
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.ovm-save-indicator.error {
+    opacity: 1;
+    color: #dc3232;
+}
+
+.ovm-save-indicator.error::before {
+    content: "✗";
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.ovm-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 120px;
+}
+
+.ovm-action-btn,
+.ovm-delete-btn {
+    white-space: nowrap;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+    height: auto !important;
+    line-height: 1.2 !important;
+}
+
+.ovm-delete-btn {
+    color: #a00 !important;
+}
+
+.ovm-delete-btn:hover {
+    color: #dc3232 !important;
+    border-color: #dc3232 !important;
+}
+
+.no-items {
+    text-align: center;
+    padding: 40px !important;
+    color: #666;
+    font-style: italic;
+}
+
+@media screen and (max-width: 782px) {
+    .ovm-comments-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .ovm-admin-response {
+        min-width: 150px;
+    }
+    
+    .ovm-comment-content {
+        max-width: 200px;
+    }
+}
+
+.wp-core-ui .ovm-comments-table .button-small {
+    min-height: 26px;
+    line-height: 24px;
+}
+
+.ovm-tab-content {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+.tablenav {
+    margin: 10px 0;
+}
+
+.tablenav .actions {
+    padding: 0;
+}
+
+#bulk-action-selector {
+    margin-right: 5px;
+}
+
+.ovm-comments-table .column-cb {
+    width: 30px;
+    padding: 8px 0 8px 3px;
+}
+
+.ovm-comments-table .column-cb input {
+    margin: 0;
+}
+
+.spinner {
+    float: none;
+    margin: 0 5px;
+}
+
+.ovm-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.ovm-loading-overlay.active {
+    display: flex;
+}
+
+.ovm-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #0073aa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Comment editing styles */
+.ovm-content-edit {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.ovm-comment-edit {
+    width: 100%;
+    min-width: 300px;
+    max-width: 500px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.ovm-comment-edit:focus {
+    border-color: #0073aa;
+    box-shadow: 0 0 0 1px #0073aa;
+    outline: none;
+}
+
+.ovm-edit-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 5px;
+}
+
+.ovm-edit-controls {
+    margin-top: 5px;
+}
+
+.ovm-edit-controls .button-link {
+    color: #0073aa;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.ovm-edit-controls .button-link:hover {
+    text-decoration: underline;
+}
+
+.ovm-comment-save-indicator {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.ovm-comment-save-indicator.saving {
+    opacity: 1;
+    background: url(../../images/spinner.gif) no-repeat center;
+    background-size: 20px 20px;
+}
+
+.ovm-comment-save-indicator.saved {
+    opacity: 1;
+    color: #46b450;
+}
+
+.ovm-comment-save-indicator.saved::before {
+    content: "✓";
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.ovm-comment-save-indicator.error {
+    opacity: 1;
+    color: #dc3232;
+}
+
+.ovm-comment-save-indicator.error::before {
+    content: "✗";
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Import button styles */
+.ovm-import-btn {
+    margin-left: 10px;
+}
+
+.ovm-import-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+}
+
+/* Import modal styles */
+.ovm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ovm-modal-content {
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80%;
+    overflow-y: auto;
+}
+
+.ovm-modal-header {
+    padding: 20px 25px 15px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.ovm-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.4;
+}
+
+.ovm-modal-body {
+    padding: 25px;
+}
+
+.ovm-modal-footer {
+    padding: 15px 25px 20px;
+    border-top: 1px solid #e5e5e5;
+    text-align: right;
+}
+
+/* Progress bar styles */
+.ovm-progress-container {
+    margin-bottom: 20px;
+}
+
+.ovm-progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #f1f1f1;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.ovm-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0073aa 0%, #005177 100%);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.ovm-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+    animation: progress-shine 2s infinite;
+}
+
+.ovm-progress-text {
+    text-align: center;
+    font-weight: 600;
+    color: #555;
+}
+
+@keyframes progress-shine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+#ovm-import-status {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+#ovm-import-details {
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Responsive modal */
+@media screen and (max-width: 600px) {
+    .ovm-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .ovm-modal-header,
+    .ovm-modal-body,
+    .ovm-modal-footer {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
