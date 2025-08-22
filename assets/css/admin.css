@@ -49,13 +49,48 @@
 
 .ovm-comments-table {
     margin-top: 10px;
-    table-layout: auto;
+    table-layout: fixed;
+    width: 100%;
 }
 
 .ovm-comments-table th,
 .ovm-comments-table td {
     padding: 10px;
     vertical-align: top;
+}
+
+/* Column width optimizations */
+.ovm-comments-table th:nth-child(2),
+.ovm-comments-table td:nth-child(2) {
+    width: 15%; /* Artikel column */
+}
+
+.ovm-comments-table th:nth-child(3),
+.ovm-comments-table td:nth-child(3) {
+    width: 100px; /* Datum column - compact */
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.ovm-comments-table th:nth-child(4),
+.ovm-comments-table td:nth-child(4) {
+    width: 120px; /* Door column - smaller */
+    max-width: 150px;
+}
+
+.ovm-comments-table th:nth-child(5),
+.ovm-comments-table td:nth-child(5) {
+    width: 35%; /* Opmerking column - more space */
+}
+
+.ovm-comments-table th:nth-child(6),
+.ovm-comments-table td:nth-child(6) {
+    width: 35%; /* Reactie column - more space */
+}
+
+.ovm-comments-table th:nth-child(7),
+.ovm-comments-table td:nth-child(7) {
+    width: 160px; /* Acties column - wider for ChatGPT button */
 }
 
 .ovm-comments-table .check-column {
@@ -72,6 +107,9 @@
     display: block;
     margin-bottom: 4px;
     cursor: help;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ovm-rating {
@@ -81,7 +119,7 @@
 }
 
 .ovm-comment-content {
-    max-width: 400px;
+    line-height: 1.5;
 }
 
 .ovm-comment-content.has-more {
@@ -115,15 +153,13 @@
 
 .ovm-admin-response {
     width: 100%;
-    min-width: 250px;
-    max-width: 400px;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
     resize: vertical;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     font-size: 14px;
-    line-height: 1.4;
+    line-height: 1.5;
     transition: border-color 0.3s;
 }
 
@@ -180,7 +216,34 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    min-width: 120px;
+}
+
+/* ChatGPT button styles */
+.ovm-chatgpt-btn {
+    background-color: #10a37f !important;
+    border-color: #10a37f !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+    height: auto !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.ovm-chatgpt-btn:hover {
+    background-color: #0d8968 !important;
+    border-color: #0d8968 !important;
+    color: #fff !important;
+}
+
+.ovm-chatgpt-btn.copied {
+    background-color: #46b450 !important;
+    border-color: #46b450 !important;
+}
+
+.ovm-chatgpt-btn.copied::before {
+    content: "✓ ";
 }
 
 .ovm-action-btn,
@@ -208,6 +271,68 @@
     font-style: italic;
 }
 
+/* Image display styles */
+.ovm-images-container {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.ovm-images-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.ovm-image-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.ovm-image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ovm-image-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 5px;
+    display: flex;
+    justify-content: space-around;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.ovm-image-item:hover .ovm-image-actions {
+    opacity: 1;
+}
+
+.ovm-image-actions a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    padding: 2px 5px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.ovm-image-actions a:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 @media screen and (max-width: 782px) {
     .ovm-comments-table {
         display: block;
@@ -215,12 +340,12 @@
         -webkit-overflow-scrolling: touch;
     }
     
-    .ovm-admin-response {
-        min-width: 150px;
-    }
-    
-    .ovm-comment-content {
-        max-width: 200px;
+    /* On mobile, prioritize Opmerking and Reactie columns */
+    .ovm-comments-table th:nth-child(5),
+    .ovm-comments-table td:nth-child(5),
+    .ovm-comments-table th:nth-child(6),
+    .ovm-comments-table td:nth-child(6) {
+        min-width: 250px;
     }
 }
 

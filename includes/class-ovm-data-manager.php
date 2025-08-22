@@ -69,6 +69,20 @@ class OVM_Data_Manager {
         try {
             $charset_collate = $wpdb->get_charset_collate();
             
+            // Check if images column exists, if not add it
+            $columns = $wpdb->get_results("SHOW COLUMNS FROM {$this->table_name}");
+            $column_names = array();
+            if ($columns) {
+                foreach ($columns as $column) {
+                    $column_names[] = $column->Field;
+                }
+            }
+            
+            // Add images column if it doesn't exist
+            if (!in_array('images', $column_names) && $this->table_exists()) {
+                $wpdb->query("ALTER TABLE {$this->table_name} ADD COLUMN images TEXT DEFAULT NULL AFTER metadata");
+            }
+            
             // Use proper SQL syntax for dbDelta
             $sql = "CREATE TABLE {$this->table_name} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -85,6 +99,7 @@ class OVM_Data_Manager {
                 status varchar(50) NOT NULL DEFAULT 'te_verwerken',
                 status_changed_date datetime DEFAULT NULL,
                 metadata longtext DEFAULT NULL,
+                images text DEFAULT NULL,
                 created_at datetime DEFAULT CURRENT_TIMESTAMP,
                 updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (id),
@@ -133,7 +148,8 @@ class OVM_Data_Manager {
             'admin_response' => null,
             'status' => 'te_verwerken',
             'status_changed_date' => current_time('mysql'),
-            'metadata' => null
+            'metadata' => null,
+            'images' => null
         );
         
         $data = wp_parse_args($data, $defaults);
@@ -142,13 +158,22 @@ class OVM_Data_Manager {
             $data['metadata'] = maybe_serialize($data['metadata']);
         }
         
+        // Only detect images if not already provided
+        if (empty($data['images'])) {
+            // Detect images in comment content before stripping
+            $detected_images = $this->detect_images_in_content($data['comment_content'], $data['comment_id']);
+            if (!empty($detected_images)) {
+                $data['images'] = json_encode($detected_images);
+            }
+        }
+        
         $data['comment_content'] = $this->strip_content($data['comment_content']);
         
         $result = $wpdb->insert(
             $this->table_name,
             $data,
             array(
-                '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s'
+                '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s'
             )
         );
         
@@ -156,12 +181,82 @@ class OVM_Data_Manager {
     }
     
     /**
+     * Detect images in comment content
+     */
+    private function detect_images_in_content($content, $comment_id = null) {
+        $images = array();
+        
+        // Detect IMG tags in content
+        preg_match_all('/<img[^>]+src=[\'"]([^\'"]+)[\'"][^>]*>/i', $content, $matches);
+        if (!empty($matches[1])) {
+            foreach ($matches[1] as $img_url) {
+                $images[] = array(
+                    'url' => esc_url_raw($img_url),
+                    'type' => 'embedded'
+                );
+            }
+        }
+        
+        // Check for WordPress comment attachments if comment_id is provided
+        if ($comment_id) {
+            // Check multiple possible meta keys for attachments
+            $meta_keys = array('comment_attachment', 'dco_attachment_id', 'attachment_id');
+            foreach ($meta_keys as $meta_key) {
+                $attachments = get_comment_meta($comment_id, $meta_key, false);
+                if (!empty($attachments)) {
+                    foreach ($attachments as $attachment_id) {
+                        if (!empty($attachment_id)) {
+                            $attachment_url = wp_get_attachment_url($attachment_id);
+                            if ($attachment_url) {
+                                // Get full size URL for better quality
+                                $full_url = wp_get_attachment_image_url($attachment_id, 'full');
+                                $images[] = array(
+                                    'url' => esc_url_raw($full_url ?: $attachment_url),
+                                    'type' => 'attachment',
+                                    'attachment_id' => $attachment_id,
+                                    'meta_key' => $meta_key
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return $images;
+    }
+    
+    /**
      * Strip unnecessary whitespace and special characters from content
+     * Less aggressive version that preserves formatting
      */
     private function strip_content($content) {
+        // Remove HTML tags but preserve line breaks
+        $content = preg_replace('/<br\s*\/?>/i', "\n", $content);
+        $content = preg_replace('/<\/p>/i', "\n\n", $content);
+        $content = preg_replace('/<p[^>]*>/i', '', $content);
         $content = wp_strip_all_tags($content);
-        $content = preg_replace('/\s+/', ' ', $content);
+        
+        // Normalize line endings to \n
+        $content = str_replace(array("\r\n", "\r"), "\n", $content);
+        
+        // Remove excessive empty lines (more than 2 consecutive)
+        $content = preg_replace("/\n{3,}/", "\n\n", $content);
+        
+        // Remove leading/trailing whitespace per line
+        $lines = explode("\n", $content);
+        $lines = array_map('trim', $lines);
+        $content = implode("\n", $lines);
+        
+        // Remove excessive spaces (more than 2 becomes 1)
+        $content = preg_replace('/\s{2,}/', ' ', $content);
+        
+        // Preserve list formatting (bullets at start of line)
+        $content = preg_replace('/\n\s*[-*•]\s+/', "\n- ", $content);
+        
+        // Final trim to remove leading/trailing whitespace
         $content = trim($content);
+        
         return $content;
     }
     
@@ -338,6 +433,75 @@ class OVM_Data_Manager {
         update_option('ovm_import_count', $imported);
         
         return $imported;
+    }
+    
+    /**
+     * Update existing comments with missing images
+     */
+    public function update_missing_images() {
+        global $wpdb;
+        
+        // Get all comments without images
+        $comments = $wpdb->get_results("SELECT * FROM {$this->table_name} WHERE comment_id IS NOT NULL");
+        
+        $updated = 0;
+        foreach ($comments as $comment) {
+            $images = array();
+            
+            // Check for IMG tags in content
+            $original_comment = get_comment($comment->comment_id);
+            if ($original_comment) {
+                // Check original content for images
+                preg_match_all('/<img[^>]+src=[\'"]([^\'"]+)[\'"][^>]*>/i', $original_comment->comment_content, $matches);
+                if (!empty($matches[1])) {
+                    foreach ($matches[1] as $img_url) {
+                        $images[] = array(
+                            'url' => esc_url_raw($img_url),
+                            'type' => 'embedded'
+                        );
+                    }
+                }
+                
+                // Debug: Get all meta keys for this comment
+                $all_meta = get_comment_meta($comment->comment_id);
+                error_log('Comment ID ' . $comment->comment_id . ' has meta keys: ' . print_r(array_keys($all_meta), true));
+                
+                // Check for WordPress comment attachments (multiple possible meta keys)
+                $meta_keys = array('comment_attachment', 'dco_attachment_id', 'attachment_id');
+                foreach ($meta_keys as $meta_key) {
+                    $attachments = get_comment_meta($comment->comment_id, $meta_key, false);
+                    if (!empty($attachments)) {
+                        error_log('Found attachments for meta key ' . $meta_key . ': ' . print_r($attachments, true));
+                        foreach ($attachments as $attachment_id) {
+                            if (!empty($attachment_id)) {
+                                $attachment_url = wp_get_attachment_url($attachment_id);
+                                if ($attachment_url) {
+                                    // Get full size URL for better quality
+                                    $full_url = wp_get_attachment_image_url($attachment_id, 'full');
+                                    $images[] = array(
+                                        'url' => esc_url_raw($full_url ?: $attachment_url),
+                                        'type' => 'attachment',
+                                        'attachment_id' => $attachment_id,
+                                        'meta_key' => $meta_key
+                                    );
+                                    error_log('Added image from attachment ID ' . $attachment_id . ': ' . ($full_url ?: $attachment_url));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Update if images found
+            if (!empty($images)) {
+                $this->update_comment($comment->id, array(
+                    'images' => json_encode($images)
+                ));
+                $updated++;
+            }
+        }
+        
+        return $updated;
     }
     
     /**

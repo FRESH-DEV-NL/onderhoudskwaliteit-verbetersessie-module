@@ -155,14 +155,19 @@ class OVM_Admin_Page {
             </select>
             
             <?php if ($tab === 'klaar_voor_export'): ?>
-            <button class="button button-secondary ovm-export-btn" disabled>
-                <?php echo esc_html__('Export (komt binnenkort)', 'onderhoudskwaliteit-verbetersessie'); ?>
+            <button class="button button-secondary ovm-export-btn" data-status="klaar_voor_export">
+                <?php echo esc_html__('Export naar CSV', 'onderhoudskwaliteit-verbetersessie'); ?>
             </button>
             <?php endif; ?>
             
             <button class="button button-primary ovm-import-btn" id="ovm-import-comments">
                 <span class="dashicons dashicons-download" style="margin-top: 3px;"></span>
                 <?php echo esc_html__('Importeer Comments', 'onderhoudskwaliteit-verbetersessie'); ?>
+            </button>
+            
+            <button class="button button-secondary ovm-update-images-btn" id="ovm-update-images">
+                <span class="dashicons dashicons-format-image" style="margin-top: 3px;"></span>
+                <?php echo esc_html__('Update Afbeeldingen', 'onderhoudskwaliteit-verbetersessie'); ?>
             </button>
         </div>
         
@@ -299,15 +304,38 @@ class OVM_Admin_Page {
             <td class="ovm-comment-content <?php echo esc_attr($full_content_class); ?>">
                 <div class="ovm-content-display">
                     <div class="ovm-content-truncated">
-                        <?php echo esc_html($truncated_content); ?>
+                        <?php echo nl2br(esc_html($truncated_content)); ?>
                     </div>
                     <?php if ($full_content_class): ?>
                     <div class="ovm-content-full" style="display: none;">
-                        <?php echo esc_html($comment->comment_content); ?>
+                        <?php echo nl2br(esc_html($comment->comment_content)); ?>
                     </div>
                     <a href="#" class="ovm-toggle-content"><?php echo esc_html__('Meer', 'onderhoudskwaliteit-verbetersessie'); ?></a>
                     <?php endif; ?>
                 </div>
+                
+                <?php 
+                // Display images if available
+                if (!empty($comment->images)) {
+                    $images = json_decode($comment->images, true);
+                    if (!empty($images) && is_array($images)): ?>
+                    <div class="ovm-images-container">
+                        <strong><?php echo esc_html__('Afbeeldingen:', 'onderhoudskwaliteit-verbetersessie'); ?></strong>
+                        <div class="ovm-images-grid">
+                            <?php foreach ($images as $image): ?>
+                            <div class="ovm-image-item">
+                                <img src="<?php echo esc_url($image['url']); ?>" alt="Comment image">
+                                <div class="ovm-image-actions">
+                                    <a href="<?php echo esc_url($image['url']); ?>" download target="_blank">⬇️ Download</a>
+                                    <a href="<?php echo esc_url($image['url']); ?>" target="_blank">🔍 Bekijk</a>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif;
+                }
+                ?>
                 
                 <?php if ($status === 'te_verwerken'): ?>
                 <div class="ovm-content-edit" style="display: none;">
@@ -386,6 +414,10 @@ class OVM_Admin_Page {
                     break;
             }
             ?>
+            <button type="button" class="button button-small ovm-chatgpt-btn" 
+                    data-comment-id="<?php echo esc_attr($comment_id); ?>">
+                💬 ChatGPT
+            </button>
             <button type="button" class="button button-small button-link-delete ovm-delete-btn" 
                     data-comment-id="<?php echo esc_attr($comment_id); ?>">
                 <?php echo esc_html__('Verwijderen', 'onderhoudskwaliteit-verbetersessie'); ?>

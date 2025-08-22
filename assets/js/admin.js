@@ -193,6 +193,136 @@
                 startImportProcess();
             }
         });
+
+        // ChatGPT button - copy prompt to clipboard
+        $(document).on('click', '.ovm-chatgpt-btn', function(e) {
+            e.preventDefault();
+            const $btn = $(this);
+            const commentId = $btn.data('comment-id');
+            const $row = $btn.closest('tr');
+            
+            // Get the comment content
+            const $contentEl = $row.find('.ovm-comment-content');
+            let commentContent = '';
+            
+            // Check if there's a full content version
+            const $fullContent = $contentEl.find('.ovm-content-full');
+            if ($fullContent.length) {
+                commentContent = $fullContent.text();
+            } else {
+                // Use truncated content or direct content
+                const $truncated = $contentEl.find('.ovm-content-truncated');
+                if ($truncated.length) {
+                    commentContent = $truncated.text();
+                } else {
+                    commentContent = $contentEl.text();
+                }
+            }
+            
+            // Clean up the content
+            commentContent = commentContent.replace(/\s*(Meer|Minder|Bewerken)\s*$/g, '').trim();
+            
+            // Generate the ChatGPT prompt
+            const prompt = `Formuleer een professioneel en behulpzaam antwoord op de volgende klantopmerking:
+
+"${commentContent}"
+
+Richtlijnen:
+- Vriendelijke en professionele toon
+- Ga in op alle genoemde punten
+- Geef concrete oplossingen waar mogelijk
+- Houd het beknopt maar volledig`;
+            
+            // Copy to clipboard
+            copyToClipboard(prompt, $btn);
+        });
+
+        // Update images button
+        $('#ovm-update-images').on('click', function(e) {
+            e.preventDefault();
+            
+            const $btn = $(this);
+            $btn.prop('disabled', true);
+            $btn.html('<span class="spinner is-active" style="float: none; margin: 0 5px 0 0;"></span>Afbeeldingen updaten...');
+            
+            $.ajax({
+                url: ovm_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ovm_update_missing_images',
+                    nonce: ovm_ajax.nonce
+                },
+                success: function(result) {
+                    $btn.prop('disabled', false);
+                    $btn.html('<span class="dashicons dashicons-format-image" style="margin-top: 3px;"></span>Update Afbeeldingen');
+                    
+                    if (result.success) {
+                        showNotification(result.data.message, 'success');
+                        if (result.data.updated > 0) {
+                            // Reload the page to show updated images
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000);
+                        }
+                    } else {
+                        alert('Update mislukt: ' + result.data.message);
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false);
+                    $btn.html('<span class="dashicons dashicons-format-image" style="margin-top: 3px;"></span>Update Afbeeldingen');
+                    alert('Er is een fout opgetreden tijdens het updaten.');
+                }
+            });
+        });
+
+        // Export button
+        $(document).on('click', '.ovm-export-btn', function(e) {
+            e.preventDefault();
+            const $btn = $(this);
+            const status = $btn.data('status');
+            
+            $btn.prop('disabled', true);
+            $btn.text('Exporteren...');
+            
+            $.ajax({
+                url: ovm_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ovm_export_comments',
+                    nonce: ovm_ajax.nonce,
+                    status: status
+                },
+                success: function(result) {
+                    $btn.prop('disabled', false);
+                    $btn.text('Export naar CSV');
+                    
+                    if (result.success) {
+                        // Create download link
+                        const csvContent = result.data.csv;
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement('a');
+                        const url = URL.createObjectURL(blob);
+                        
+                        link.setAttribute('href', url);
+                        link.setAttribute('download', result.data.filename);
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        showNotification('Export succesvol!', 'success');
+                    } else {
+                        alert('Export mislukt: ' + result.data.message);
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false);
+                    $btn.text('Export naar CSV');
+                    alert('Er is een fout opgetreden tijdens het exporteren.');
+                }
+            });
+        });
     }
 
     /**
@@ -655,6 +785,63 @@
                 $(this).remove();
             });
         }, 3000);
+    }
+
+    /**
+     * Copy text to clipboard
+     */
+    function copyToClipboard(text, $btn) {
+        // Try using the modern clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Success - show feedback
+                showCopySuccess($btn);
+            }).catch(function(err) {
+                // Fallback to older method
+                fallbackCopyToClipboard(text, $btn);
+            });
+        } else {
+            // Use fallback for older browsers
+            fallbackCopyToClipboard(text, $btn);
+        }
+    }
+
+    /**
+     * Fallback method for copying to clipboard
+     */
+    function fallbackCopyToClipboard(text, $btn) {
+        const $temp = $('<textarea>');
+        $('body').append($temp);
+        $temp.val(text).select();
+        
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showCopySuccess($btn);
+            } else {
+                // Show the prompt in an alert as last resort
+                alert('Kopieer de volgende prompt:\n\n' + text);
+            }
+        } catch (err) {
+            // Show the prompt in an alert as last resort
+            alert('Kopieer de volgende prompt:\n\n' + text);
+        }
+        
+        $temp.remove();
+    }
+
+    /**
+     * Show copy success feedback
+     */
+    function showCopySuccess($btn) {
+        const originalText = $btn.html();
+        $btn.addClass('copied');
+        $btn.html('✓ Gekopieerd!');
+        
+        setTimeout(function() {
+            $btn.removeClass('copied');
+            $btn.html(originalText);
+        }, 2000);
     }
 
 })(jQuery);

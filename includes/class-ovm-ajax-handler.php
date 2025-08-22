@@ -318,6 +318,43 @@ class OVM_Ajax_Handler {
                 'batch_import' => true
             );
             
+            // Detect images in comment
+            $images = array();
+            
+            // Check for IMG tags in content
+            preg_match_all('/<img[^>]+src=[\'"]([^\'"]+)[\'"][^>]*>/i', $comment->comment_content, $matches);
+            if (!empty($matches[1])) {
+                foreach ($matches[1] as $img_url) {
+                    $images[] = array(
+                        'url' => esc_url_raw($img_url),
+                        'type' => 'embedded'
+                    );
+                }
+            }
+            
+            // Check for WordPress comment attachments (multiple possible meta keys)
+            $meta_keys = array('comment_attachment', 'dco_attachment_id', 'attachment_id');
+            foreach ($meta_keys as $meta_key) {
+                $attachments = get_comment_meta($comment->comment_ID, $meta_key, false);
+                if (!empty($attachments)) {
+                    foreach ($attachments as $attachment_id) {
+                        if (!empty($attachment_id)) {
+                            $attachment_url = wp_get_attachment_url($attachment_id);
+                            if ($attachment_url) {
+                                // Get full size URL for better quality
+                                $full_url = wp_get_attachment_image_url($attachment_id, 'full');
+                                $images[] = array(
+                                    'url' => esc_url_raw($full_url ?: $attachment_url),
+                                    'type' => 'attachment',
+                                    'attachment_id' => $attachment_id,
+                                    'meta_key' => $meta_key
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            
             $data = array(
                 'comment_id' => $comment->comment_ID,
                 'post_id' => $comment->comment_post_ID,
@@ -331,7 +368,8 @@ class OVM_Ajax_Handler {
                 'admin_response' => '',
                 'status' => 'te_verwerken',
                 'status_changed_date' => current_time('mysql'),
-                'metadata' => $metadata
+                'metadata' => $metadata,
+                'images' => !empty($images) ? json_encode($images) : null
             );
             
             if ($this->data_manager->insert_comment($data)) {
@@ -384,6 +422,112 @@ class OVM_Ajax_Handler {
         }
         
         wp_send_json_success($response_data);
+    }
+    
+    /**
+     * Update missing images
+     */
+    public function update_missing_images() {
+        $this->verify_ajax_request();
+        
+        $updated = $this->data_manager->update_missing_images();
+        
+        wp_send_json_success(array(
+            'message' => sprintf(__('%d comments bijgewerkt met afbeeldingen', 'onderhoudskwaliteit-verbetersessie'), $updated),
+            'updated' => $updated
+        ));
+    }
+    
+    /**
+     * Export comments to CSV
+     */
+    public function export_comments() {
+        $this->verify_ajax_request();
+        
+        $status = isset($_POST['status']) ? sanitize_text_field($_POST['status']) : 'klaar_voor_export';
+        
+        // Get comments for export
+        $comments = $this->data_manager->get_comments_by_status($status);
+        
+        if (empty($comments)) {
+            wp_send_json_error(array('message' => __('Geen opmerkingen om te exporteren', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Prepare CSV data
+        $csv_data = array();
+        
+        // Add UTF-8 BOM for Excel compatibility
+        $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
+        
+        // Headers
+        $headers = array(
+            'Artikel',
+            'Datum',
+            'Auteur',
+            'Email',
+            'Opmerking',
+            'Reactie',
+            'Status',
+            'Status Datum'
+        );
+        
+        // Start building CSV
+        $csv_output = $bom;
+        $csv_output .= $this->array_to_csv_line($headers);
+        
+        // Add data rows
+        foreach ($comments as $comment) {
+            $row = array(
+                $comment->post_title,
+                date_i18n(get_option('date_format'), strtotime($comment->comment_date)),
+                $comment->author_name,
+                $comment->author_email,
+                $comment->comment_content,
+                $comment->admin_response ?: '',
+                $this->get_status_label($comment->status),
+                $comment->status_changed_date ? date_i18n(get_option('date_format'), strtotime($comment->status_changed_date)) : ''
+            );
+            
+            $csv_output .= $this->array_to_csv_line($row);
+        }
+        
+        // Generate filename
+        $filename = 'ovm_export_' . $status . '_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        wp_send_json_success(array(
+            'csv' => $csv_output,
+            'filename' => $filename,
+            'count' => count($comments)
+        ));
+    }
+    
+    /**
+     * Convert array to CSV line
+     */
+    private function array_to_csv_line($array) {
+        $line = '';
+        foreach ($array as $value) {
+            // Escape quotes and wrap in quotes if contains special characters
+            $value = str_replace('"', '""', $value);
+            if (strpos($value, ',') !== false || strpos($value, '"') !== false || strpos($value, "\n") !== false || strpos($value, "\r") !== false) {
+                $value = '"' . $value . '"';
+            }
+            $line .= $value . ',';
+        }
+        return rtrim($line, ',') . "\r\n";
+    }
+    
+    /**
+     * Get status label
+     */
+    private function get_status_label($status) {
+        $labels = array(
+            'te_verwerken' => 'Te verwerken',
+            'klaar_voor_export' => 'Klaar voor export',
+            'afgerond' => 'Afgerond'
+        );
+        
+        return isset($labels[$status]) ? $labels[$status] : $status;
     }
     
     /**

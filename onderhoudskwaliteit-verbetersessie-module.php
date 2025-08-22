@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('OVM_VERSION', '1.0');
+define('OVM_VERSION', '1.1');
 define('OVM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('OVM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('OVM_PLUGIN_FILE', __FILE__);
@@ -93,6 +93,8 @@ class Onderhoudskwaliteit_Verbetersessie_Module {
         add_action('wp_ajax_ovm_delete_comment', array($ajax_handler, 'delete_comment'));
         add_action('wp_ajax_ovm_save_comment_content', array($ajax_handler, 'save_comment_content'));
         add_action('wp_ajax_ovm_import_comments', array($ajax_handler, 'import_comments'));
+        add_action('wp_ajax_ovm_export_comments', array($ajax_handler, 'export_comments'));
+        add_action('wp_ajax_ovm_update_missing_images', array($ajax_handler, 'update_missing_images'));
         
         // Check for database updates
         add_action('admin_init', array($this, 'check_database_version'));
