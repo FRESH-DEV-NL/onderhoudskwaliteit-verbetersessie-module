@@ -679,7 +679,7 @@ class OVM_Ajax_Handler {
     }
     
     /**
-     * Export comments to CSV
+     * Export comments to PDF
      */
     public function export_comments() {
         $this->verify_ajax_request();
@@ -698,46 +698,130 @@ class OVM_Ajax_Handler {
             return strcasecmp($a->post_title, $b->post_title);
         });
         
-        // Prepare CSV data
-        $csv_data = array();
+        // Load mPDF autoloader
+        require_once OVM_PLUGIN_DIR . 'lib/mpdf-autoload.php';
         
-        // Add UTF-8 BOM for Excel compatibility
-        $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
-        
-        // Headers
-        $headers = array(
-            'Artikel',
-            'Datum ingezonden',
-            'Auteur',
-            'Opmerking',
-            'Antwoord'
-        );
-        
-        // Start building CSV
-        $csv_output = $bom;
-        $csv_output .= $this->array_to_csv_line($headers);
-        
-        // Add data rows
-        foreach ($comments as $comment) {
-            $row = array(
-                $comment->post_title,
-                date_i18n(get_option('date_format'), strtotime($comment->comment_date)),
-                $comment->author_name,
-                $comment->comment_content,
-                $comment->admin_response ?: ''
-            );
+        try {
+            // Create new mPDF instance
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'orientation' => 'L', // Landscape orientation
+                'margin_left' => 18,
+                'margin_right' => 18,
+                'margin_top' => 18,
+                'margin_bottom' => 25,
+                'margin_header' => 0, // No header
+                'margin_footer' => 8,
+                'tempDir' => OVM_PLUGIN_DIR . 'lib/tmp/mpdf'
+            ]);
             
-            $csv_output .= $this->array_to_csv_line($row);
+            // Set document information (minimal)
+            $mpdf->SetTitle('CVS samenvatting - ' . date('Y-m-d'));
+            $mpdf->SetAuthor('');
+            $mpdf->SetCreator('');
+            
+            // Get export date for title
+            $export_date = date('Y-m-d');
+            
+            // Build clean HTML content - landscape optimized
+            $html = '
+            <style>
+                body { 
+                    font-family: DejaVu Sans, sans-serif; 
+                    font-size: 10pt; 
+                    line-height: 1.3;
+                    color: #111;
+                    margin: 0;
+                    padding: 0;
+                }
+                
+                h1 {
+                    font-size: 18pt;
+                    font-weight: bold;
+                    margin: 0 0 15px 0;
+                    color: #111;
+                }
+                
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                }
+                
+                th, td {
+                    text-align: left;
+                    vertical-align: top;
+                    padding: 8px;
+                    border: 1px solid #C9CCD1;
+                    word-wrap: break-word;
+                }
+                
+                th {
+                    font-weight: bold;
+                    background-color: #F4F6F8;
+                }
+                
+                .col-artikel { 
+                    width: 15%; 
+                    background-color: #F4F6F8;
+                    font-weight: bold;
+                }
+                .col-door { width: 12%; }
+                .col-opmerking { width: 38%; }
+                .col-antwoord { width: 35%; }
+                
+            </style>
+            
+            <h1>CVS samenvatting - ' . $export_date . '</h1>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-artikel">Artikel</th>
+                        <th class="col-door">Door</th>
+                        <th class="col-opmerking">Opmerking</th>
+                        <th class="col-antwoord">Antwoord</th>
+                    </tr>
+                </thead>
+                <tbody>';
+            
+            // Add data rows
+            foreach ($comments as $comment) {
+                $html .= '<tr>';
+                $html .= '<td class="col-artikel">' . esc_html($comment->post_title) . '</td>';
+                $html .= '<td class="col-door">' . esc_html($comment->author_name) . '</td>';
+                $html .= '<td class="col-opmerking">' . nl2br(esc_html($comment->comment_content)) . '</td>';
+                $html .= '<td class="col-antwoord">' . nl2br(esc_html($comment->admin_response ?: '-')) . '</td>';
+                $html .= '</tr>';
+            }
+            
+            $html .= '
+                </tbody>
+            </table>';
+            
+            // Set footer for page numbering
+            $mpdf->SetHTMLFooter('<div style="text-align: right; font-size: 9pt; color: #555;">Pagina {PAGENO}</div>');
+            
+            // Write HTML to PDF
+            $mpdf->WriteHTML($html);
+            
+            // Generate filename
+            $filename = 'CVS samenvatting - ' . $export_date . '.pdf';
+            
+            // Output PDF as base64 for JavaScript download
+            $pdf_content = $mpdf->Output('', 'S');
+            $pdf_base64 = base64_encode($pdf_content);
+            
+            wp_send_json_success(array(
+                'pdf' => $pdf_base64,
+                'filename' => $filename,
+                'count' => count($comments)
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'PDF generatie fout: ' . $e->getMessage()));
         }
-        
-        // Generate filename
-        $filename = 'ovm_export_' . $status . '_' . date('Y-m-d_H-i-s') . '.csv';
-        
-        wp_send_json_success(array(
-            'csv' => $csv_output,
-            'filename' => $filename,
-            'count' => count($comments)
-        ));
     }
     
     /**

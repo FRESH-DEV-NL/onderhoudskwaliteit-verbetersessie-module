@@ -165,7 +165,7 @@ class OVM_Admin_Page {
             
             <?php if ($tab === 'klaar_voor_export'): ?>
             <button class="button button-secondary ovm-export-btn" data-status="klaar_voor_export">
-                <?php echo esc_html__('Export naar CSV', 'onderhoudskwaliteit-verbetersessie'); ?>
+                <?php echo esc_html__('Export naar PDF', 'onderhoudskwaliteit-verbetersessie'); ?>
             </button>
             <?php endif; ?>
             

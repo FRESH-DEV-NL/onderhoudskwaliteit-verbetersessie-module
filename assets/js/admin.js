@@ -307,7 +307,7 @@
             const status = $btn.data('status');
             
             $btn.prop('disabled', true);
-            $btn.text('Exporteren...');
+            $btn.text('PDF genereren...');
             
             $.ajax({
                 url: ovm_ajax.ajax_url,
@@ -319,12 +319,18 @@
                 },
                 success: function(result) {
                     $btn.prop('disabled', false);
-                    $btn.text('Export naar CSV');
+                    $btn.text('Export naar PDF');
                     
                     if (result.success) {
-                        // Create download link
-                        const csvContent = result.data.csv;
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        // Convert base64 to blob and download
+                        const pdfData = atob(result.data.pdf);
+                        const pdfArray = new Uint8Array(pdfData.length);
+                        
+                        for (let i = 0; i < pdfData.length; i++) {
+                            pdfArray[i] = pdfData.charCodeAt(i);
+                        }
+                        
+                        const blob = new Blob([pdfArray], { type: 'application/pdf' });
                         const link = document.createElement('a');
                         const url = URL.createObjectURL(blob);
                         
@@ -335,15 +341,20 @@
                         link.click();
                         document.body.removeChild(link);
                         
-                        showNotification('Export succesvol!', 'success');
+                        // Clean up
+                        setTimeout(function() {
+                            URL.revokeObjectURL(url);
+                        }, 100);
+                        
+                        showNotification('PDF export succesvol! (' + result.data.count + ' items)', 'success');
                     } else {
                         alert('Export mislukt: ' + result.data.message);
                     }
                 },
                 error: function() {
                     $btn.prop('disabled', false);
-                    $btn.text('Export naar CSV');
-                    alert('Er is een fout opgetreden tijdens het exporteren.');
+                    $btn.text('Export naar PDF');
+                    alert('Er is een fout opgetreden tijdens het genereren van de PDF.');
                 }
             });
         });
