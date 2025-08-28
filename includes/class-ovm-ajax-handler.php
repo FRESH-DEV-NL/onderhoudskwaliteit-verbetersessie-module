@@ -64,6 +64,16 @@ class OVM_Ajax_Handler {
             wp_send_json_error(array('message' => __('Ongeldige comment ID', 'onderhoudskwaliteit-verbetersessie')));
         }
         
+        // Check if comment can be edited (only te_verwerken status)
+        $comment = $this->data_manager->get_comment($comment_id);
+        if (!$comment) {
+            wp_send_json_error(array('message' => __('Comment niet gevonden', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        if ($comment->status !== 'te_verwerken') {
+            wp_send_json_error(array('message' => __('Alleen opmerkingen met status "Te verwerken" kunnen worden bewerkt', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
         $result = $this->data_manager->update_comment($comment_id, array(
             'admin_response' => $response
         ));
@@ -95,6 +105,34 @@ class OVM_Ajax_Handler {
         
         if (!$comment) {
             wp_send_json_error(array('message' => __('Comment niet gevonden', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Special handling for delete_wp_comment action
+        if ($action === 'delete_wp_comment') {
+            // Check if status is 'afgerond'
+            if ($comment->status !== 'afgerond') {
+                wp_send_json_error(array('message' => __('Alleen afgeronde comments kunnen uit WordPress worden verwijderd', 'onderhoudskwaliteit-verbetersessie')));
+            }
+            
+            // Delete WordPress comment if it exists
+            if ($comment->comment_id) {
+                if (wp_delete_comment($comment->comment_id, true)) {
+                    // Update record to clear comment_id
+                    $this->data_manager->update_comment($comment_id, array(
+                        'comment_id' => null
+                    ));
+                    
+                    wp_send_json_success(array(
+                        'message' => __('WordPress comment verwijderd', 'onderhoudskwaliteit-verbetersessie'),
+                        'status' => $comment->status
+                    ));
+                } else {
+                    wp_send_json_error(array('message' => __('Kon WordPress comment niet verwijderen', 'onderhoudskwaliteit-verbetersessie')));
+                }
+            } else {
+                wp_send_json_error(array('message' => __('Geen WordPress comment gevonden om te verwijderen', 'onderhoudskwaliteit-verbetersessie')));
+            }
+            return;
         }
         
         $new_status = $this->get_new_status_from_action($action, $comment->status);
@@ -145,6 +183,49 @@ class OVM_Ajax_Handler {
             wp_send_json_success(array(
                 'message' => sprintf(__('%d opmerkingen verwijderd', 'onderhoudskwaliteit-verbetersessie'), $success),
                 'deleted' => $success
+            ));
+        } else if ($action === 'delete_wp_comments') {
+            // Only allow for completed items
+            $success = 0;
+            $wp_deleted = 0;
+            $errors = array();
+            
+            foreach ($comment_ids as $id) {
+                $comment = $this->data_manager->get_comment($id);
+                
+                if (!$comment) {
+                    $errors[] = sprintf(__('Comment %d niet gevonden', 'onderhoudskwaliteit-verbetersessie'), $id);
+                    continue;
+                }
+                
+                // Check if status is 'afgerond'
+                if ($comment->status !== 'afgerond') {
+                    $errors[] = sprintf(__('Comment %d is niet afgerond', 'onderhoudskwaliteit-verbetersessie'), $id);
+                    continue;
+                }
+                
+                // Delete WordPress comment if it exists
+                if ($comment->comment_id && wp_delete_comment($comment->comment_id, true)) {
+                    $wp_deleted++;
+                    
+                    // Update record to clear comment_id
+                    $this->data_manager->update_comment($id, array(
+                        'comment_id' => null
+                    ));
+                    
+                    $success++;
+                }
+            }
+            
+            $message = sprintf(__('%d WordPress comments verwijderd', 'onderhoudskwaliteit-verbetersessie'), $wp_deleted);
+            if (!empty($errors)) {
+                $message .= ' - ' . implode(', ', $errors);
+            }
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'deleted' => $success,
+                'errors' => $errors
             ));
         } else {
             if ($action === 'move_to_export') {
@@ -200,6 +281,131 @@ class OVM_Ajax_Handler {
     }
     
     /**
+     * Get posts for a specific status
+     */
+    public function get_posts_for_status() {
+        $this->verify_ajax_request();
+        
+        $status = isset($_POST['status']) ? sanitize_text_field($_POST['status']) : 'te_verwerken';
+        
+        $posts = $this->data_manager->get_posts_with_comments($status);
+        
+        wp_send_json_success(array(
+            'posts' => $posts
+        ));
+    }
+    
+    /**
+     * Generate ChatGPT response
+     */
+    public function chatgpt_generate_response() {
+        $this->verify_ajax_request();
+        
+        $comment_id = isset($_POST['comment_id']) ? intval($_POST['comment_id']) : 0;
+        
+        if (!$comment_id) {
+            wp_send_json_error(array('message' => __('Ongeldige comment ID', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Get API key and prompt from settings
+        $api_key = get_option('ovm_chatgpt_api_key', '');
+        $prompt_template = get_option('ovm_chatgpt_prompt', 'Herschrijf deze tekst maar behoud de toon en zorg dat er geen spelfouten in de tekst zit: [reactie_tekst]');
+        
+        if (empty($api_key)) {
+            wp_send_json_error(array('message' => __('ChatGPT API key niet geconfigureerd. Ga naar Instellingen om de API key in te stellen.', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Get comment content
+        $comment = $this->data_manager->get_comment($comment_id);
+        if (!$comment) {
+            wp_send_json_error(array('message' => __('Comment niet gevonden', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Use admin response text instead of comment content
+        $admin_response_text = $comment->admin_response ?: '';
+        
+        if (empty($admin_response_text)) {
+            wp_send_json_error(array('message' => __('Voer eerst een reactie in voordat je ChatGPT gebruikt om deze te verbeteren.', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Replace placeholder in prompt with admin response
+        $prompt = str_replace('[reactie_tekst]', $admin_response_text, $prompt_template);
+        
+        // Make API call to OpenAI
+        $response = $this->call_openai_api($api_key, $prompt);
+        
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+        }
+        
+        // Save the generated response
+        $result = $this->data_manager->update_comment($comment_id, array(
+            'admin_response' => $response
+        ));
+        
+        if ($result !== false) {
+            wp_send_json_success(array(
+                'message' => __('ChatGPT reactie gegenereerd en opgeslagen', 'onderhoudskwaliteit-verbetersessie'),
+                'response' => $response
+            ));
+        } else {
+            wp_send_json_error(array('message' => __('Fout bij opslaan van gegenereerde reactie', 'onderhoudskwaliteit-verbetersessie')));
+        }
+    }
+    
+    /**
+     * Call OpenAI API
+     */
+    private function call_openai_api($api_key, $prompt) {
+        $url = 'https://api.openai.com/v1/chat/completions';
+        
+        $body = array(
+            'model' => 'gpt-3.5-turbo',
+            'messages' => array(
+                array(
+                    'role' => 'user',
+                    'content' => $prompt
+                )
+            ),
+            'max_tokens' => 500,
+            'temperature' => 0.7
+        );
+        
+        $args = array(
+            'method' => 'POST',
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $api_key,
+                'Content-Type' => 'application/json'
+            ),
+            'body' => json_encode($body),
+            'timeout' => 30
+        );
+        
+        $response = wp_remote_request($url, $args);
+        
+        if (is_wp_error($response)) {
+            return new WP_Error('api_error', __('Fout bij verbinding met ChatGPT API: ', 'onderhoudskwaliteit-verbetersessie') . $response->get_error_message());
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($response);
+        $response_body = wp_remote_retrieve_body($response);
+        
+        if ($response_code !== 200) {
+            $error_data = json_decode($response_body, true);
+            $error_message = isset($error_data['error']['message']) ? $error_data['error']['message'] : __('Onbekende API fout', 'onderhoudskwaliteit-verbetersessie');
+            return new WP_Error('api_error', __('ChatGPT API fout: ', 'onderhoudskwaliteit-verbetersessie') . $error_message);
+        }
+        
+        $data = json_decode($response_body, true);
+        
+        if (!isset($data['choices'][0]['message']['content'])) {
+            return new WP_Error('api_error', __('Onverwacht API antwoord formaat', 'onderhoudskwaliteit-verbetersessie'));
+        }
+        
+        return trim($data['choices'][0]['message']['content']);
+    }
+    
+    /**
      * Delete comment
      */
     public function delete_comment() {
@@ -235,9 +441,43 @@ class OVM_Ajax_Handler {
             wp_send_json_error(array('message' => __('Ongeldige comment ID', 'onderhoudskwaliteit-verbetersessie')));
         }
         
-        // Strip content like the original method
+        // Check if comment can be edited (only te_verwerken status)
+        $comment = $this->data_manager->get_comment($comment_id);
+        if (!$comment) {
+            wp_send_json_error(array('message' => __('Comment niet gevonden', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        if ($comment->status !== 'te_verwerken') {
+            wp_send_json_error(array('message' => __('Alleen opmerkingen met status "Te verwerken" kunnen worden bewerkt', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Strip content but preserve line breaks
+        $content = preg_replace('/<br\s*\/?>/i', "\n", $content);
+        $content = preg_replace('/<\/p>/i', "\n", $content);
+        $content = preg_replace('/<p[^>]*>/i', '', $content);
         $content = wp_strip_all_tags($content);
-        $content = preg_replace('/\s+/', ' ', $content);
+        
+        // Normalize line endings
+        $content = str_replace(array("\r\n", "\r"), "\n", $content);
+        
+        // Replace multiple consecutive newlines (3 or more) with maximum 2 newlines
+        $content = preg_replace("/\n{3,}/", "\n\n", $content);
+        
+        // Remove leading/trailing whitespace per line
+        $lines = explode("\n", $content);
+        $lines = array_map('trim', $lines);
+        $content = implode("\n", $lines);
+        
+        // Remove excessive spaces within lines
+        $lines = explode("\n", $content);
+        foreach ($lines as &$line) {
+            $line = preg_replace('/[ \t]{2,}/', ' ', $line);
+        }
+        $content = implode("\n", $lines);
+        
+        // Preserve list formatting
+        $content = preg_replace('/\n\s*[-–*•]\s+/', "\n– ", $content);
+        
         $content = trim($content);
         
         $result = $this->data_manager->update_comment($comment_id, array(
@@ -245,8 +485,8 @@ class OVM_Ajax_Handler {
         ));
         
         if ($result !== false) {
-            // Return truncated version for display
-            $truncated_content = wp_trim_words($content, 30, '...');
+            // Create truncated version that preserves line breaks
+            $truncated_content = $this->truncate_with_formatting($content, 200);
             $has_more = strlen($content) > 200;
             
             wp_send_json_success(array(
@@ -453,6 +693,11 @@ class OVM_Ajax_Handler {
             wp_send_json_error(array('message' => __('Geen opmerkingen om te exporteren', 'onderhoudskwaliteit-verbetersessie')));
         }
         
+        // Sort comments by article name (post_title) in alphabetical order
+        usort($comments, function($a, $b) {
+            return strcasecmp($a->post_title, $b->post_title);
+        });
+        
         // Prepare CSV data
         $csv_data = array();
         
@@ -462,13 +707,10 @@ class OVM_Ajax_Handler {
         // Headers
         $headers = array(
             'Artikel',
-            'Datum',
+            'Datum ingezonden',
             'Auteur',
-            'Email',
             'Opmerking',
-            'Reactie',
-            'Status',
-            'Status Datum'
+            'Antwoord'
         );
         
         // Start building CSV
@@ -481,11 +723,8 @@ class OVM_Ajax_Handler {
                 $comment->post_title,
                 date_i18n(get_option('date_format'), strtotime($comment->comment_date)),
                 $comment->author_name,
-                $comment->author_email,
                 $comment->comment_content,
-                $comment->admin_response ?: '',
-                $this->get_status_label($comment->status),
-                $comment->status_changed_date ? date_i18n(get_option('date_format'), strtotime($comment->status_changed_date)) : ''
+                $comment->admin_response ?: ''
             );
             
             $csv_output .= $this->array_to_csv_line($row);
@@ -541,5 +780,25 @@ class OVM_Ajax_Handler {
         );
         
         return isset($status_map[$action]) ? $status_map[$action] : false;
+    }
+    
+    /**
+     * Truncate text while preserving line breaks and formatting
+     */
+    private function truncate_with_formatting($text, $max_length = 200) {
+        if (strlen($text) <= $max_length) {
+            return $text;
+        }
+        
+        // Cut at max_length
+        $truncated = substr($text, 0, $max_length);
+        
+        // Try to cut at last complete word
+        $last_space = strrpos($truncated, ' ');
+        if ($last_space !== false && $last_space > $max_length * 0.8) {
+            $truncated = substr($truncated, 0, $last_space);
+        }
+        
+        return $truncated . '...';
     }
 }

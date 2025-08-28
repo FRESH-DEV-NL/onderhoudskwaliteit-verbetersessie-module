@@ -233,26 +233,30 @@ class OVM_Data_Manager {
     private function strip_content($content) {
         // Remove HTML tags but preserve line breaks
         $content = preg_replace('/<br\s*\/?>/i', "\n", $content);
-        $content = preg_replace('/<\/p>/i', "\n\n", $content);
+        $content = preg_replace('/<\/p>/i', "\n", $content);
         $content = preg_replace('/<p[^>]*>/i', '', $content);
         $content = wp_strip_all_tags($content);
         
         // Normalize line endings to \n
         $content = str_replace(array("\r\n", "\r"), "\n", $content);
         
-        // Remove excessive empty lines (more than 2 consecutive)
+        // Replace multiple consecutive newlines (3 or more) with maximum 2 newlines
         $content = preg_replace("/\n{3,}/", "\n\n", $content);
         
-        // Remove leading/trailing whitespace per line
+        // Remove leading/trailing whitespace per line but preserve line breaks
         $lines = explode("\n", $content);
         $lines = array_map('trim', $lines);
         $content = implode("\n", $lines);
         
-        // Remove excessive spaces (more than 2 becomes 1)
-        $content = preg_replace('/\s{2,}/', ' ', $content);
+        // Remove excessive spaces within lines (more than 2 becomes 1), but not newlines
+        $lines = explode("\n", $content);
+        foreach ($lines as &$line) {
+            $line = preg_replace('/[ \t]{2,}/', ' ', $line);
+        }
+        $content = implode("\n", $lines);
         
         // Preserve list formatting (bullets at start of line)
-        $content = preg_replace('/\n\s*[-*•]\s+/', "\n- ", $content);
+        $content = preg_replace('/\n\s*[-–*•]\s+/', "\n– ", $content);
         
         // Final trim to remove leading/trailing whitespace
         $content = trim($content);
@@ -330,10 +334,17 @@ class OVM_Data_Manager {
     /**
      * Get all unique posts with comments
      */
-    public function get_posts_with_comments() {
+    public function get_posts_with_comments($status = null) {
         global $wpdb;
         
-        $query = "SELECT DISTINCT post_id, post_title FROM {$this->table_name} ORDER BY post_title ASC";
+        if ($status) {
+            $query = $wpdb->prepare(
+                "SELECT DISTINCT post_id, post_title FROM {$this->table_name} WHERE status = %s ORDER BY post_title ASC",
+                $status
+            );
+        } else {
+            $query = "SELECT DISTINCT post_id, post_title FROM {$this->table_name} ORDER BY post_title ASC";
+        }
         
         return $wpdb->get_results($query);
     }

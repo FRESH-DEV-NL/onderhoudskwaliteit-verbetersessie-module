@@ -116,6 +116,10 @@ class OVM_Admin_Page {
                     <?php echo esc_html__('Afgerond', 'onderhoudskwaliteit-verbetersessie'); ?>
                     <?php $this->render_count_badge('afgerond'); ?>
                 </a>
+                <a href="?page=ovm-settings&tab=instellingen" 
+                   class="nav-tab <?php echo $current_tab === 'instellingen' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo esc_html__('Instellingen', 'onderhoudskwaliteit-verbetersessie'); ?>
+                </a>
             </nav>
             
             <div class="ovm-tab-content" data-tab="<?php echo esc_attr($current_tab); ?>">
@@ -141,12 +145,17 @@ class OVM_Admin_Page {
      * Render tab content
      */
     private function render_tab_content($tab) {
+        if ($tab === 'instellingen') {
+            $this->render_settings_tab();
+            return;
+        }
+        
         ?>
         <div class="ovm-filters">
             <select id="ovm-page-filter" class="ovm-page-filter">
                 <option value=""><?php echo esc_html__('Alle pagina\'s', 'onderhoudskwaliteit-verbetersessie'); ?></option>
                 <?php
-                $posts = $this->data_manager->get_posts_with_comments();
+                $posts = $this->data_manager->get_posts_with_comments($tab);
                 foreach ($posts as $post) {
                     echo '<option value="' . esc_attr($post->post_id) . '">' . 
                          esc_html($post->post_title) . '</option>';
@@ -240,6 +249,7 @@ class OVM_Admin_Page {
             case 'afgerond':
                 ?>
                 <option value="move_to_export"><?php echo esc_html__('Terugzetten naar "Klaar voor export"', 'onderhoudskwaliteit-verbetersessie'); ?></option>
+                <option value="delete_wp_comments"><?php echo esc_html__('WordPress comments verwijderen', 'onderhoudskwaliteit-verbetersessie'); ?></option>
                 <option value="delete"><?php echo esc_html__('Verwijderen', 'onderhoudskwaliteit-verbetersessie'); ?></option>
                 <?php
                 break;
@@ -269,13 +279,33 @@ class OVM_Admin_Page {
     }
     
     /**
+     * Truncate text while preserving line breaks
+     */
+    private function truncate_with_formatting($text, $max_length = 200) {
+        if (strlen($text) <= $max_length) {
+            return $text;
+        }
+        
+        // Cut at max_length
+        $truncated = substr($text, 0, $max_length);
+        
+        // Try to cut at last complete word
+        $last_space = strrpos($truncated, ' ');
+        if ($last_space !== false && $last_space > $max_length * 0.8) {
+            $truncated = substr($truncated, 0, $last_space);
+        }
+        
+        return $truncated . '...';
+    }
+    
+    /**
      * Render single comment row
      */
     private function render_single_comment_row($comment, $status) {
         $post_link = get_permalink($comment->post_id);
         $metadata = maybe_unserialize($comment->metadata);
         
-        $truncated_content = wp_trim_words($comment->comment_content, 30, '...');
+        $truncated_content = $this->truncate_with_formatting($comment->comment_content, 200);
         $full_content_class = strlen($comment->comment_content) > 200 ? 'has-more' : '';
         
         ?>
@@ -327,7 +357,7 @@ class OVM_Admin_Page {
                                 <img src="<?php echo esc_url($image['url']); ?>" alt="Comment image">
                                 <div class="ovm-image-actions">
                                     <a href="<?php echo esc_url($image['url']); ?>" download target="_blank">⬇️ Download</a>
-                                    <a href="<?php echo esc_url($image['url']); ?>" target="_blank">🔍 Bekijk</a>
+                                    <a href="<?php echo esc_url($image['url']); ?>" class="ovm-view-image">🔍 Bekijk</a>
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -357,11 +387,21 @@ class OVM_Admin_Page {
                 <?php endif; ?>
             </td>
             <td>
-                <textarea class="ovm-admin-response" 
-                          data-comment-id="<?php echo esc_attr($comment->id); ?>"
-                          placeholder="<?php echo esc_attr__('Typ je reactie...', 'onderhoudskwaliteit-verbetersessie'); ?>"
-                          rows="3"><?php echo esc_textarea($comment->admin_response); ?></textarea>
-                <span class="ovm-save-indicator"></span>
+                <?php if ($status === 'te_verwerken'): ?>
+                    <textarea class="ovm-admin-response" 
+                              data-comment-id="<?php echo esc_attr($comment->id); ?>"
+                              placeholder="<?php echo esc_attr__('Typ je reactie...', 'onderhoudskwaliteit-verbetersessie'); ?>"
+                              rows="3"><?php echo esc_textarea($comment->admin_response); ?></textarea>
+                    <span class="ovm-save-indicator"></span>
+                <?php else: ?>
+                    <div class="ovm-admin-response-readonly">
+                        <?php if (!empty($comment->admin_response)): ?>
+                            <?php echo nl2br(esc_html($comment->admin_response)); ?>
+                        <?php else: ?>
+                            <em><?php echo esc_html__('Geen reactie', 'onderhoudskwaliteit-verbetersessie'); ?></em>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </td>
             <td>
                 <?php $this->render_action_buttons($comment->id, $status); ?>
@@ -410,19 +450,93 @@ class OVM_Admin_Page {
                             data-comment-id="<?php echo esc_attr($comment_id); ?>">
                         <?php echo esc_html__('← Export', 'onderhoudskwaliteit-verbetersessie'); ?>
                     </button>
+                    <button type="button" class="button button-small button-link-delete ovm-action-btn" 
+                            data-action="delete_wp_comment" 
+                            data-comment-id="<?php echo esc_attr($comment_id); ?>"
+                            onclick="return confirm('Weet je zeker dat je de WordPress comment wilt verwijderen? Dit kan niet ongedaan worden gemaakt.');">
+                        <?php echo esc_html__('WP Comment Verwijderen', 'onderhoudskwaliteit-verbetersessie'); ?>
+                    </button>
                     <?php
                     break;
             }
             ?>
+            <?php if ($status === 'te_verwerken'): ?>
             <button type="button" class="button button-small ovm-chatgpt-btn" 
                     data-comment-id="<?php echo esc_attr($comment_id); ?>">
                 💬 ChatGPT
             </button>
+            <?php endif; ?>
             <button type="button" class="button button-small button-link-delete ovm-delete-btn" 
                     data-comment-id="<?php echo esc_attr($comment_id); ?>">
                 <?php echo esc_html__('Verwijderen', 'onderhoudskwaliteit-verbetersessie'); ?>
             </button>
         </div>
         <?php
+    }
+    
+    /**
+     * Render settings tab
+     */
+    private function render_settings_tab() {
+        $chatgpt_api_key = get_option('ovm_chatgpt_api_key', '');
+        $chatgpt_prompt = get_option('ovm_chatgpt_prompt', 'Herschrijf deze tekst maar behoud de toon en zorg dat er geen spelfouten in de tekst zit: [reactie_tekst]');
+        ?>
+        <div class="ovm-settings-container">
+            <h3><?php echo esc_html__('ChatGPT Instellingen', 'onderhoudskwaliteit-verbetersessie'); ?></h3>
+            
+            <form id="ovm-settings-form" method="post">
+                <?php wp_nonce_field('ovm_save_settings', 'ovm_settings_nonce'); ?>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="chatgpt_api_key"><?php echo esc_html__('OpenAI API Key', 'onderhoudskwaliteit-verbetersessie'); ?></label>
+                        </th>
+                        <td>
+                            <input type="password" 
+                                   id="chatgpt_api_key" 
+                                   name="chatgpt_api_key" 
+                                   value="<?php echo esc_attr($chatgpt_api_key); ?>" 
+                                   class="regular-text" 
+                                   placeholder="sk-..." />
+                            <p class="description"><?php echo esc_html__('Je OpenAI API key voor ChatGPT integratie', 'onderhoudskwaliteit-verbetersessie'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="chatgpt_prompt"><?php echo esc_html__('ChatGPT Prompt', 'onderhoudskwaliteit-verbetersessie'); ?></label>
+                        </th>
+                        <td>
+                            <textarea id="chatgpt_prompt" 
+                                      name="chatgpt_prompt" 
+                                      rows="5" 
+                                      class="large-text"><?php echo esc_textarea($chatgpt_prompt); ?></textarea>
+                            <p class="description">
+                                <?php echo esc_html__('Gebruik [reactie_tekst] als placeholder voor de opmerking tekst', 'onderhoudskwaliteit-verbetersessie'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <input type="submit" 
+                           name="save_settings" 
+                           class="button-primary" 
+                           value="<?php echo esc_attr__('Instellingen opslaan', 'onderhoudskwaliteit-verbetersessie'); ?>" />
+                    <span class="ovm-settings-save-indicator"></span>
+                </p>
+            </form>
+        </div>
+        <?php
+        
+        // Handle form submission
+        if (isset($_POST['save_settings']) && wp_verify_nonce($_POST['ovm_settings_nonce'], 'ovm_save_settings')) {
+            update_option('ovm_chatgpt_api_key', sanitize_text_field($_POST['chatgpt_api_key']));
+            update_option('ovm_chatgpt_prompt', sanitize_textarea_field($_POST['chatgpt_prompt']));
+            
+            echo '<div class="notice notice-success is-dismissible"><p>' . 
+                 esc_html__('Instellingen opgeslagen!', 'onderhoudskwaliteit-verbetersessie') . 
+                 '</p></div>';
+        }
     }
 }

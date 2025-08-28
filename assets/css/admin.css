@@ -127,16 +127,34 @@
 }
 
 .ovm-content-truncated {
-    line-height: 1.4;
+    line-height: 1.6;
+    white-space: pre-line;
 }
 
 .ovm-content-full {
-    line-height: 1.4;
+    line-height: 1.6;
+    white-space: pre-line;
     margin-top: 10px;
     padding: 10px;
     background: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 3px;
+}
+
+.ovm-admin-response-readonly {
+    padding: 8px;
+    background: #f9f9f9;
+    border: 1px solid #e1e1e1;
+    border-radius: 3px;
+    min-height: 60px;
+    font-style: italic;
+    color: #666;
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.ovm-admin-response-readonly em {
+    color: #999;
 }
 
 .ovm-toggle-content {
@@ -282,55 +300,155 @@
 
 .ovm-images-grid {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    gap: 0;
     margin-top: 5px;
 }
 
 .ovm-image-item {
-    position: relative;
-    width: 100px;
-    height: 100px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     background: #fff;
     border: 1px solid #ccc;
     border-radius: 3px;
-    overflow: hidden;
+    padding: 8px;
+    margin-bottom: 8px;
 }
 
 .ovm-image-item img {
-    width: 100%;
-    height: 100%;
+    width: 80px;
+    height: 80px;
     object-fit: cover;
+    border-radius: 3px;
+    flex-shrink: 0;
 }
 
 .ovm-image-actions {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 5px;
     display: flex;
-    justify-content: space-around;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.ovm-image-item:hover .ovm-image-actions {
-    opacity: 1;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .ovm-image-actions a {
-    color: #fff;
+    color: #0073aa;
     text-decoration: none;
     font-size: 12px;
-    padding: 2px 5px;
-    background: rgba(255, 255, 255, 0.2);
+    padding: 6px 10px;
+    background: #f7f7f7;
+    border: 1px solid #ccd0d4;
     border-radius: 3px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    text-align: center;
+    min-width: 80px;
+    display: inline-block;
 }
 
 .ovm-image-actions a:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: #0073aa;
+    border-color: #0073aa;
+    color: #fff;
+}
+
+/* Image modal styles */
+.ovm-image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.ovm-image-modal.active {
+    display: flex;
+}
+
+.ovm-image-modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #fff;
+    border-radius: 5px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.ovm-image-modal img {
+    max-width: 100%;
+    max-height: calc(90vh - 80px);
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: 3px;
+}
+
+.ovm-image-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 5px;
+    line-height: 1;
+}
+
+.ovm-image-modal-close:hover {
+    color: #000;
+}
+
+.ovm-image-modal-title {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    color: #333;
+}
+
+body.ovm-modal-open {
+    overflow: hidden;
+}
+
+/* Settings page styles */
+.ovm-settings-container {
+    max-width: 800px;
+    margin-top: 20px;
+}
+
+.ovm-settings-container h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.ovm-settings-save-indicator {
+    margin-left: 10px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.ovm-settings-save-indicator.saving {
+    opacity: 1;
+    color: #0073aa;
+}
+
+.ovm-settings-save-indicator.saved {
+    opacity: 1;
+    color: #46b450;
+}
+
+.ovm-settings-save-indicator.saved::after {
+    content: "✓ Opgeslagen";
 }
 
 @media screen and (max-width: 782px) {

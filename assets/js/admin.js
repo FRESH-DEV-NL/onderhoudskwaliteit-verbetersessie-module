@@ -64,6 +64,13 @@
             const action = $btn.data('action');
             const commentId = $btn.data('comment-id');
             
+            // Special handling for delete_wp_comment
+            if (action === 'delete_wp_comment') {
+                // Confirmation is handled in the onclick attribute
+                changeCommentStatus(commentId, action, $btn);
+                return;
+            }
+            
             // Check if response is required for move to export
             if (action === 'move_to_export') {
                 const $response = $btn.closest('tr').find('.ovm-admin-response');
@@ -106,6 +113,10 @@
             }
             
             if (action === 'delete' && !confirm(ovm_ajax.strings.confirm_bulk_delete)) {
+                return;
+            }
+            
+            if (action === 'delete_wp_comments' && !confirm('Weet je zeker dat je de WordPress comments wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) {
                 return;
             }
             
@@ -194,47 +205,60 @@
             }
         });
 
-        // ChatGPT button - copy prompt to clipboard
+        // Image modal functionality
+        $(document).on('click', '.ovm-view-image', function(e) {
+            e.preventDefault();
+            const imageUrl = $(this).attr('href');
+            showImageModal(imageUrl);
+        });
+
+        // Close modal when clicking on background or close button
+        $(document).on('click', '.ovm-image-modal', function(e) {
+            if (e.target === this) {
+                hideImageModal();
+            }
+        });
+
+        $(document).on('click', '.ovm-image-modal-close', function(e) {
+            e.preventDefault();
+            hideImageModal();
+        });
+
+        // Close modal with Escape key
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && $('.ovm-image-modal.active').length > 0) {
+                hideImageModal();
+            }
+        });
+
+        // Tab switching
+        $('.nav-tab').on('click', function() {
+            const newTab = $(this).attr('href').replace('#', '');
+            if (newTab !== currentTab) {
+                currentTab = newTab;
+                updatePageFilter(newTab);
+            }
+        });
+
+        // ChatGPT button - generate response via API
         $(document).on('click', '.ovm-chatgpt-btn', function(e) {
             e.preventDefault();
             const $btn = $(this);
             const commentId = $btn.data('comment-id');
-            const $row = $btn.closest('tr');
             
-            // Get the comment content
-            const $contentEl = $row.find('.ovm-comment-content');
-            let commentContent = '';
-            
-            // Check if there's a full content version
-            const $fullContent = $contentEl.find('.ovm-content-full');
-            if ($fullContent.length) {
-                commentContent = $fullContent.text();
-            } else {
-                // Use truncated content or direct content
-                const $truncated = $contentEl.find('.ovm-content-truncated');
-                if ($truncated.length) {
-                    commentContent = $truncated.text();
-                } else {
-                    commentContent = $contentEl.text();
-                }
+            // Only proceed if we're in "te_verwerken" status
+            if (currentTab !== 'te_verwerken') {
+                alert('ChatGPT functionaliteit is alleen beschikbaar voor items die nog te verwerken zijn.');
+                return;
             }
             
-            // Clean up the content
-            commentContent = commentContent.replace(/\s*(Meer|Minder|Bewerken)\s*$/g, '').trim();
+            // Show loading state
+            const originalText = $btn.html();
+            $btn.prop('disabled', true);
+            $btn.html('<span class="spinner is-active" style="float: none; margin: 0 5px 0 0;"></span>Genereren...');
             
-            // Generate the ChatGPT prompt
-            const prompt = `Formuleer een professioneel en behulpzaam antwoord op de volgende klantopmerking:
-
-"${commentContent}"
-
-Richtlijnen:
-- Vriendelijke en professionele toon
-- Ga in op alle genoemde punten
-- Geef concrete oplossingen waar mogelijk
-- Houd het beknopt maar volledig`;
-            
-            // Copy to clipboard
-            copyToClipboard(prompt, $btn);
+            // Make API call
+            generateChatGPTResponse(commentId, $btn, originalText);
         });
 
         // Update images button
@@ -380,12 +404,19 @@ Richtlijnen:
             },
             success: function(result) {
                 if (result.success) {
-                    // Remove row with fade effect
-                    $btn.closest('tr').fadeOut(400, function() {
-                        $(this).remove();
-                        updateEmptyState();
-                        updateCountBadges();
-                    });
+                    if (action === 'delete_wp_comment') {
+                        // For WordPress comment deletion, just show message and update button
+                        alert(result.data.message);
+                        $btn.text('WP Comment Verwijderd').prop('disabled', true).addClass('disabled');
+                        $btn.prop('disabled', false); // Re-enable for potential other actions
+                    } else {
+                        // Remove row with fade effect for status changes
+                        $btn.closest('tr').fadeOut(400, function() {
+                            $(this).remove();
+                            updateEmptyState();
+                            updateCountBadges();
+                        });
+                    }
                 } else {
                     alert(result.data.message);
                     $btn.prop('disabled', false);
@@ -599,9 +630,9 @@ Richtlijnen:
                     const $full = $display.find('.ovm-content-full');
                     const $toggle = $display.find('.ovm-toggle-content');
                     
-                    // Update content
-                    $truncated.text(result.data.truncated);
-                    $full.text(result.data.content);
+                    // Update content with line breaks converted to HTML
+                    $truncated.html(result.data.truncated.replace(/\n/g, '<br>'));
+                    $full.html(result.data.content.replace(/\n/g, '<br>'));
                     
                     // Show/hide toggle link
                     if (result.data.has_more) {
@@ -842,6 +873,128 @@ Richtlijnen:
             $btn.removeClass('copied');
             $btn.html(originalText);
         }, 2000);
+    }
+
+    /**
+     * Show image modal
+     */
+    function showImageModal(imageUrl) {
+        // Create modal if it doesn't exist
+        if ($('.ovm-image-modal').length === 0) {
+            const modalHtml = `
+                <div class="ovm-image-modal">
+                    <div class="ovm-image-modal-content">
+                        <button class="ovm-image-modal-close">&times;</button>
+                        <h3 class="ovm-image-modal-title">Afbeelding</h3>
+                        <img src="" alt="Comment image" />
+                    </div>
+                </div>
+            `;
+            $('body').append(modalHtml);
+        }
+
+        // Set the image source and show modal
+        $('.ovm-image-modal img').attr('src', imageUrl);
+        $('.ovm-image-modal').addClass('active');
+        
+        // Prevent body scrolling
+        $('body').addClass('ovm-modal-open');
+    }
+
+    /**
+     * Hide image modal
+     */
+    function hideImageModal() {
+        $('.ovm-image-modal').removeClass('active');
+        
+        // Re-enable body scrolling
+        $('body').removeClass('ovm-modal-open');
+    }
+
+    /**
+     * Update page filter options for the current tab
+     */
+    function updatePageFilter(status) {
+        $.ajax({
+            url: ovm_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ovm_get_posts_for_status',
+                nonce: ovm_ajax.nonce,
+                status: status
+            },
+            success: function(result) {
+                if (result.success) {
+                    const $select = $('#ovm-page-filter');
+                    const currentValue = $select.val();
+                    
+                    // Clear current options except "Alle pagina's"
+                    $select.find('option:not(:first)').remove();
+                    
+                    // Add new options
+                    result.data.posts.forEach(function(post) {
+                        $select.append('<option value="' + post.post_id + '">' + post.post_title + '</option>');
+                    });
+                    
+                    // Restore selection if still valid
+                    if (currentValue && $select.find('option[value="' + currentValue + '"]').length > 0) {
+                        $select.val(currentValue);
+                    } else {
+                        $select.val(''); // Reset to "Alle pagina's"
+                    }
+                }
+            },
+            error: function() {
+                console.error('Failed to update page filter');
+            }
+        });
+    }
+
+    /**
+     * Generate ChatGPT response
+     */
+    function generateChatGPTResponse(commentId, $btn, originalText) {
+        $.ajax({
+            url: ovm_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ovm_chatgpt_generate_response',
+                nonce: ovm_ajax.nonce,
+                comment_id: commentId
+            },
+            success: function(result) {
+                if (result.success) {
+                    // Update the admin response textarea
+                    const $row = $btn.closest('tr');
+                    const $textarea = $row.find('.ovm-admin-response');
+                    
+                    if ($textarea.length) {
+                        $textarea.val(result.data.response);
+                        $textarea.trigger('input'); // Trigger auto-save
+                    }
+                    
+                    // Show success feedback
+                    $btn.removeClass('button-primary').addClass('button-secondary');
+                    $btn.html('✓ Gegenereerd');
+                    
+                    setTimeout(function() {
+                        $btn.removeClass('button-secondary').addClass('button-primary');
+                        $btn.html(originalText);
+                        $btn.prop('disabled', false);
+                    }, 3000);
+                    
+                } else {
+                    alert(result.data.message || 'Fout bij genereren van ChatGPT reactie');
+                    $btn.html(originalText);
+                    $btn.prop('disabled', false);
+                }
+            },
+            error: function() {
+                alert('Netwerk fout bij ChatGPT API call');
+                $btn.html(originalText);
+                $btn.prop('disabled', false);
+            }
+        });
     }
 
 })(jQuery);
