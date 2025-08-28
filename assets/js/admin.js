@@ -996,5 +996,114 @@
             }
         });
     }
+    
+    /**
+     * Initialize touch-friendly textarea resizing for iOS Safari
+     */
+    function initTouchResizeTextareas() {
+        // Check if we're on a touch device
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        if (!isTouchDevice) {
+            return; // Only initialize for touch devices
+        }
+        
+        // Find all textareas that need resize capability
+        const textareas = document.querySelectorAll('.ovm-admin-response, .ovm-comment-edit, #chatgpt_prompt');
+        
+        textareas.forEach(textarea => {
+            // Skip if already wrapped
+            if (textarea.parentElement.classList.contains('ovm-textarea-wrapper')) {
+                return;
+            }
+            
+            // Create wrapper
+            const wrapper = document.createElement('div');
+            wrapper.className = 'ovm-textarea-wrapper';
+            
+            // Wrap the textarea
+            textarea.parentNode.insertBefore(wrapper, textarea);
+            wrapper.appendChild(textarea);
+            
+            // Create resize handle
+            const handle = document.createElement('div');
+            handle.className = 'ovm-textarea-resize-handle';
+            handle.setAttribute('aria-label', 'Resize textarea');
+            wrapper.appendChild(handle);
+            
+            let startY = 0;
+            let startHeight = 0;
+            let isResizing = false;
+            
+            // Touch start
+            handle.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isResizing = true;
+                startY = e.touches[0].clientY;
+                startHeight = parseInt(window.getComputedStyle(textarea).height, 10);
+                textarea.style.transition = 'none';
+            }, { passive: false });
+            
+            // Touch move
+            document.addEventListener('touchmove', (e) => {
+                if (!isResizing) return;
+                
+                e.preventDefault();
+                const currentY = e.touches[0].clientY;
+                const deltaY = currentY - startY;
+                const newHeight = Math.max(100, startHeight + deltaY);
+                
+                textarea.style.height = newHeight + 'px';
+            }, { passive: false });
+            
+            // Touch end
+            document.addEventListener('touchend', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    textarea.style.transition = '';
+                }
+            });
+            
+            // Mouse events for testing on desktop
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isResizing = true;
+                startY = e.clientY;
+                startHeight = parseInt(window.getComputedStyle(textarea).height, 10);
+                textarea.style.transition = 'none';
+                document.body.style.cursor = 'ns-resize';
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                
+                const currentY = e.clientY;
+                const deltaY = currentY - startY;
+                const newHeight = Math.max(100, startHeight + deltaY);
+                
+                textarea.style.height = newHeight + 'px';
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    textarea.style.transition = '';
+                    document.body.style.cursor = '';
+                }
+            });
+        });
+    }
+    
+    // Initialize touch resize when DOM is ready
+    $(document).ready(function() {
+        initTouchResizeTextareas();
+        
+        // Re-initialize when new textareas are added dynamically
+        $(document).on('DOMNodeInserted', function(e) {
+            if ($(e.target).find('textarea').length || $(e.target).is('textarea')) {
+                setTimeout(initTouchResizeTextareas, 100);
+            }
+        });
+    });
 
 })(jQuery);

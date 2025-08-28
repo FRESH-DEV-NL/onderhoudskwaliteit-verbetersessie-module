@@ -175,10 +175,12 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     resize: vertical;
+    -webkit-overflow-scrolling: touch;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     font-size: 14px;
     line-height: 1.5;
     transition: border-color 0.3s;
+    position: relative;
 }
 
 .ovm-admin-response:focus {
@@ -556,6 +558,8 @@ body.ovm-modal-open {
     font-size: 14px;
     line-height: 1.4;
     resize: vertical;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
 }
 
 .ovm-comment-edit:focus {
@@ -753,5 +757,68 @@ body.ovm-modal-open {
     .ovm-modal-footer {
         padding-left: 20px;
         padding-right: 20px;
+    }
+}
+
+/* Touch-friendly resize handle for textareas on iOS */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific styles */
+    .ovm-textarea-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+    
+    .ovm-textarea-resize-handle {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 40px;
+        height: 40px;
+        cursor: ns-resize;
+        touch-action: none;
+        background: linear-gradient(135deg, transparent 50%, #ccc 50%);
+        border-radius: 0 0 4px 0;
+        opacity: 0.5;
+        z-index: 10;
+        display: none;
+    }
+    
+    @media (pointer: coarse) {
+        /* Show resize handle on touch devices */
+        .ovm-textarea-resize-handle {
+            display: block;
+        }
+        
+        .ovm-admin-response,
+        .ovm-comment-edit {
+            padding-bottom: 20px;
+            min-height: 100px;
+        }
+    }
+    
+    .ovm-textarea-resize-handle:active {
+        opacity: 0.8;
+        background: linear-gradient(135deg, transparent 50%, #0073aa 50%);
+    }
+}
+
+/* Fallback for browsers that support resize */
+@supports (resize: vertical) {
+    .ovm-admin-response,
+    .ovm-comment-edit,
+    #chatgpt_prompt {
+        resize: vertical;
+    }
+}
+
+/* Enhanced textarea styling for touch devices */
+@media (pointer: coarse) and (hover: none) {
+    .ovm-admin-response,
+    .ovm-comment-edit,
+    #chatgpt_prompt {
+        font-size: 16px; /* Prevent zoom on iOS */
+        -webkit-text-size-adjust: 100%;
+        min-height: 120px;
     }
 }

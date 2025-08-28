@@ -231,10 +231,16 @@ class OVM_Data_Manager {
      * Less aggressive version that preserves formatting
      */
     private function strip_content($content) {
-        // Remove HTML tags but preserve line breaks
-        $content = preg_replace('/<br\s*\/?>/i', "\n", $content);
-        $content = preg_replace('/<\/p>/i', "\n", $content);
+        // First, handle paragraph tags - empty paragraphs become single newline, 
+        // paragraphs with content get double newline after closing tag
+        $content = preg_replace('/<p[^>]*>\s*<\/p>/i', "\n", $content);
+        $content = preg_replace('/<\/p>/i', "\n\n", $content);
         $content = preg_replace('/<p[^>]*>/i', '', $content);
+        
+        // Convert br tags to single newline
+        $content = preg_replace('/<br\s*\/?>/i', "\n", $content);
+        
+        // Strip remaining HTML tags
         $content = wp_strip_all_tags($content);
         
         // Normalize line endings to \n
