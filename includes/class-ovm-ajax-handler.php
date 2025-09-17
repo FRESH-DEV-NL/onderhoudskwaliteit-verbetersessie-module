@@ -702,7 +702,7 @@ class OVM_Ajax_Handler {
         require_once OVM_PLUGIN_DIR . 'lib/mpdf-autoload.php';
         
         try {
-            // Create new mPDF instance with optimized landscape settings
+            // Create new mPDF instance with optimized landscape settings and UTF-8 support
             $mpdf = new \Mpdf\Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
@@ -713,7 +713,10 @@ class OVM_Ajax_Handler {
                 'margin_bottom' => 15,
                 'margin_header' => 0,
                 'margin_footer' => 0,
-                'tempDir' => OVM_PLUGIN_DIR . 'lib/tmp/mpdf'
+                'tempDir' => OVM_PLUGIN_DIR . 'lib/tmp/mpdf',
+                'default_font' => 'dejavusans',
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true
             ]);
             
             // Set document information (minimal)
@@ -850,11 +853,17 @@ class OVM_Ajax_Handler {
             
             // Add data rows
             foreach ($comments as $comment) {
+                // Fix character encoding issues
+                $post_title = $this->fix_text_encoding($comment->post_title);
+                $author_name = $this->fix_text_encoding($comment->author_name);
+                $comment_content = $this->fix_text_encoding($comment->comment_content);
+                $admin_response = $this->fix_text_encoding($comment->admin_response ?: '-');
+                
                 $html .= '<tr>';
-                $html .= '<td class="col-artikel">' . esc_html($comment->post_title) . '</td>';
-                $html .= '<td class="col-door">' . esc_html($comment->author_name) . '</td>';
-                $html .= '<td class="col-opmerking">' . nl2br(esc_html($comment->comment_content)) . '</td>';
-                $html .= '<td class="col-antwoord">' . nl2br(esc_html($comment->admin_response ?: '-')) . '</td>';
+                $html .= '<td class="col-artikel">' . htmlspecialchars($post_title, ENT_QUOTES, 'UTF-8') . '</td>';
+                $html .= '<td class="col-door">' . htmlspecialchars($author_name, ENT_QUOTES, 'UTF-8') . '</td>';
+                $html .= '<td class="col-opmerking">' . nl2br(htmlspecialchars($comment_content, ENT_QUOTES, 'UTF-8')) . '</td>';
+                $html .= '<td class="col-antwoord">' . nl2br(htmlspecialchars($admin_response, ENT_QUOTES, 'UTF-8')) . '</td>';
                 $html .= '</tr>';
             }
             
@@ -902,6 +911,62 @@ class OVM_Ajax_Handler {
         } catch (Exception $e) {
             wp_send_json_error(array('message' => 'PDF generatie fout: ' . $e->getMessage()));
         }
+    }
+    
+    /**
+     * Fix text encoding issues for PDF export
+     */
+    private function fix_text_encoding($text) {
+        if (empty($text)) {
+            return '';
+        }
+        
+        // Ensure UTF-8 encoding
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            $text = mb_convert_encoding($text, 'UTF-8', 'auto');
+        }
+        
+        // Replace problematic characters with proper UTF-8 equivalents
+        $replacements = array(
+            // Smart quotes
+            '"' => '"',  // Left double quotation mark
+            '"' => '"',  // Right double quotation mark
+            ''' => "'",  // Left single quotation mark
+            ''' => "'",  // Right single quotation mark
+            
+            // En/em dashes
+            '–' => '-',  // En dash
+            '—' => '-',  // Em dash
+            
+            // Other common problematic characters
+            '…' => '...',  // Horizontal ellipsis
+            '€' => 'EUR',  // Euro sign fallback
+            '®' => '(R)',  // Registered trademark
+            '©' => '(C)',  // Copyright
+            '™' => '(TM)', // Trademark
+            
+            // Remove or replace other non-printable characters
+            '\x00' => '',  // Null bytes
+            '\x01' => '',  // Start of heading
+            '\x02' => '',  // Start of text
+            '\x03' => '',  // End of text
+            '\x04' => '',  // End of transmission
+            '\x05' => '',  // Enquiry
+            '\x06' => '',  // Acknowledge
+            '\x07' => '',  // Bell
+            '\x08' => '',  // Backspace
+            '\x0B' => '',  // Vertical tab
+            '\x0C' => '',  // Form feed
+            '\x0E' => '',  // Shift out
+            '\x0F' => '',  // Shift in
+        );
+        
+        $text = str_replace(array_keys($replacements), array_values($replacements), $text);
+        
+        // Remove any remaining control characters except newlines and tabs
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text);
+        
+        return $text;
     }
     
     /**

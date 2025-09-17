@@ -322,11 +322,58 @@ class OVM_Admin_Page {
     }
     
     /**
+     * Fix text encoding issues for display
+     */
+    private function fix_text_encoding($text) {
+        if (empty($text)) {
+            return '';
+        }
+        
+        // Ensure UTF-8 encoding
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            $text = mb_convert_encoding($text, 'UTF-8', 'auto');
+        }
+        
+        // Replace problematic characters with proper UTF-8 equivalents
+        $replacements = array(
+            // Smart quotes
+            '"' => '"',  // Left double quotation mark
+            '"' => '"',  // Right double quotation mark
+            ''' => "'",  // Left single quotation mark
+            ''' => "'",  // Right single quotation mark
+            
+            // En/em dashes
+            '–' => '-',  // En dash
+            '—' => '-',  // Em dash
+            
+            // Other common problematic characters
+            '…' => '...',  // Horizontal ellipsis
+            '€' => 'EUR',  // Euro sign fallback
+            '®' => '(R)',  // Registered trademark
+            '©' => '(C)',  // Copyright
+            '™' => '(TM)', // Trademark
+        );
+        
+        $text = str_replace(array_keys($replacements), array_values($replacements), $text);
+        
+        // Remove any remaining control characters except newlines and tabs
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text);
+        
+        return $text;
+    }
+    
+    /**
      * Render single comment row
      */
     private function render_single_comment_row($comment, $status) {
         $post_link = get_permalink($comment->post_id);
         $metadata = maybe_unserialize($comment->metadata);
+        
+        // Fix text encoding for all content
+        $comment->post_title = $this->fix_text_encoding($comment->post_title);
+        $comment->author_name = $this->fix_text_encoding($comment->author_name);
+        $comment->comment_content = $this->fix_text_encoding($comment->comment_content);
+        $comment->admin_response = $this->fix_text_encoding($comment->admin_response);
         
         $truncated_content = $this->truncate_with_formatting($comment->comment_content, 200);
         $full_content_class = strlen($comment->comment_content) > 200 ? 'has-more' : '';
