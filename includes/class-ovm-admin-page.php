@@ -535,6 +535,29 @@ class OVM_Admin_Page {
      * Render settings tab
      */
     private function render_settings_tab() {
+        // Handle form submission FIRST
+        if (isset($_POST['save_settings']) && wp_verify_nonce($_POST['ovm_settings_nonce'], 'ovm_save_settings')) {
+            update_option('ovm_chatgpt_api_key', sanitize_text_field($_POST['chatgpt_api_key']));
+            update_option('ovm_chatgpt_prompt', sanitize_textarea_field($_POST['chatgpt_prompt']));
+            update_option('ovm_logo_url', esc_url_raw($_POST['ovm_logo_url']));
+            
+            // Save column order
+            if (isset($_POST['ovm_column_order'])) {
+                $column_order = explode(',', sanitize_text_field($_POST['ovm_column_order']));
+                // Validate that all columns are present
+                $valid_columns = array('artikel', 'datum', 'door', 'opmerking', 'reactie');
+                $filtered_order = array_intersect($column_order, $valid_columns);
+                if (count($filtered_order) === 5) {
+                    update_option('ovm_column_order', $filtered_order);
+                }
+            }
+            
+            echo '<div class="notice notice-success is-dismissible"><p>' . 
+                 esc_html__('Instellingen opgeslagen!', 'onderhoudskwaliteit-verbetersessie') . 
+                 '</p></div>';
+        }
+        
+        // NOW get the current values (after potential save)
         $chatgpt_api_key = get_option('ovm_chatgpt_api_key', '');
         $chatgpt_prompt = get_option('ovm_chatgpt_prompt', 'Herschrijf deze tekst maar behoud de toon en zorg dat er geen spelfouten in de tekst zit: [reactie_tekst]');
         $logo_url = get_option('ovm_logo_url', '');
@@ -658,27 +681,5 @@ class OVM_Admin_Page {
             </form>
         </div>
         <?php
-        
-        // Handle form submission
-        if (isset($_POST['save_settings']) && wp_verify_nonce($_POST['ovm_settings_nonce'], 'ovm_save_settings')) {
-            update_option('ovm_chatgpt_api_key', sanitize_text_field($_POST['chatgpt_api_key']));
-            update_option('ovm_chatgpt_prompt', sanitize_textarea_field($_POST['chatgpt_prompt']));
-            update_option('ovm_logo_url', esc_url_raw($_POST['ovm_logo_url']));
-            
-            // Save column order
-            if (isset($_POST['ovm_column_order'])) {
-                $column_order = explode(',', sanitize_text_field($_POST['ovm_column_order']));
-                // Validate that all columns are present
-                $valid_columns = array('artikel', 'datum', 'door', 'opmerking', 'reactie');
-                $filtered_order = array_intersect($column_order, $valid_columns);
-                if (count($filtered_order) === 5) {
-                    update_option('ovm_column_order', $filtered_order);
-                }
-            }
-            
-            echo '<div class="notice notice-success is-dismissible"><p>' . 
-                 esc_html__('Instellingen opgeslagen!', 'onderhoudskwaliteit-verbetersessie') . 
-                 '</p></div>';
-        }
     }
 }
