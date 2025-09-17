@@ -702,17 +702,17 @@ class OVM_Ajax_Handler {
         require_once OVM_PLUGIN_DIR . 'lib/mpdf-autoload.php';
         
         try {
-            // Create new mPDF instance
+            // Create new mPDF instance with optimized landscape settings
             $mpdf = new \Mpdf\Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
                 'orientation' => 'L', // Landscape orientation
-                'margin_left' => 18,
-                'margin_right' => 18,
-                'margin_top' => 18,
-                'margin_bottom' => 25,
-                'margin_header' => 0, // No header
-                'margin_footer' => 8,
+                'margin_left' => 12,  // Minimal margins for maximum space
+                'margin_right' => 12,
+                'margin_top' => 15,
+                'margin_bottom' => 15,
+                'margin_header' => 0,
+                'margin_footer' => 0,
                 'tempDir' => OVM_PLUGIN_DIR . 'lib/tmp/mpdf'
             ]);
             
@@ -782,30 +782,40 @@ class OVM_Ajax_Handler {
                 table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin-top: 10px;
+                    margin-top: 8px;
+                    table-layout: fixed;
                 }
                 
                 th, td {
                     text-align: left;
                     vertical-align: top;
-                    padding: 8px;
+                    padding: 5px 3px;
                     border: 1px solid #C9CCD1;
                     word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    font-size: 7pt;
+                    line-height: 1.1;
                 }
                 
                 th {
                     font-weight: bold;
                     background-color: #F4F6F8;
+                    font-size: 7pt;
+                    padding: 3px;
                 }
                 
-                .col-artikel { 
-                    width: 15%; 
+                /* Alle kolommen exact dezelfde breedte - 25% elk */
+                .col-artikel, 
+                .col-door, 
+                .col-opmerking, 
+                .col-antwoord { 
+                    width: 25%; 
+                }
+                
+                .col-artikel {
                     background-color: #F4F6F8;
                     font-weight: bold;
                 }
-                .col-door { width: 12%; }
-                .col-opmerking { width: 38%; }
-                .col-antwoord { width: 35%; }
                 
             </style>
             
