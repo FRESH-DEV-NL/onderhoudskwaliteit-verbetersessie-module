@@ -61,6 +61,9 @@ class OVM_Admin_Page {
             return;
         }
         
+        // Enqueue WordPress media scripts for logo upload
+        wp_enqueue_media();
+        
         wp_enqueue_style(
             'ovm-admin',
             OVM_PLUGIN_URL . 'assets/css/admin.css',
@@ -68,10 +71,13 @@ class OVM_Admin_Page {
             OVM_VERSION
         );
         
+        // Enqueue jQuery UI for column sorting
+        wp_enqueue_script('jquery-ui-sortable');
+        
         wp_enqueue_script(
             'ovm-admin',
             OVM_PLUGIN_URL . 'assets/js/admin.js',
-            array('jquery'),
+            array('jquery', 'jquery-ui-sortable'),
             OVM_VERSION,
             true
         );
@@ -197,11 +203,24 @@ class OVM_Admin_Page {
                         <td class="manage-column column-cb check-column">
                             <input type="checkbox" id="cb-select-all-1">
                         </td>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Artikel', 'onderhoudskwaliteit-verbetersessie'); ?></th>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Datum', 'onderhoudskwaliteit-verbetersessie'); ?></th>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Door', 'onderhoudskwaliteit-verbetersessie'); ?></th>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Opmerking', 'onderhoudskwaliteit-verbetersessie'); ?></th>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Reactie', 'onderhoudskwaliteit-verbetersessie'); ?></th>
+                        <?php 
+                        // Get custom column order
+                        $column_order = get_option('ovm_column_order', array('artikel', 'datum', 'door', 'opmerking', 'reactie'));
+                        $column_labels = array(
+                            'artikel' => __('Artikel', 'onderhoudskwaliteit-verbetersessie'),
+                            'datum' => __('Datum', 'onderhoudskwaliteit-verbetersessie'),
+                            'door' => __('Door', 'onderhoudskwaliteit-verbetersessie'),
+                            'opmerking' => __('Opmerking', 'onderhoudskwaliteit-verbetersessie'),
+                            'reactie' => __('Reactie', 'onderhoudskwaliteit-verbetersessie')
+                        );
+                        
+                        foreach ($column_order as $column_key) {
+                            if (isset($column_labels[$column_key])) {
+                                echo '<th scope="col" class="manage-column" data-column="' . esc_attr($column_key) . '">' . 
+                                     esc_html($column_labels[$column_key]) . '</th>';
+                            }
+                        }
+                        ?>
                         <th scope="col" class="manage-column"><?php echo esc_html__('Acties', 'onderhoudskwaliteit-verbetersessie'); ?></th>
                     </tr>
                 </thead>
@@ -213,11 +232,15 @@ class OVM_Admin_Page {
                         <td class="manage-column column-cb check-column">
                             <input type="checkbox" id="cb-select-all-2">
                         </td>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Artikel', 'onderhoudskwaliteit-verbetersessie'); ?></th>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Datum', 'onderhoudskwaliteit-verbetersessie'); ?></th>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Door', 'onderhoudskwaliteit-verbetersessie'); ?></th>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Opmerking', 'onderhoudskwaliteit-verbetersessie'); ?></th>
-                        <th scope="col" class="manage-column"><?php echo esc_html__('Reactie', 'onderhoudskwaliteit-verbetersessie'); ?></th>
+                        <?php 
+                        // Use same column order as thead
+                        foreach ($column_order as $column_key) {
+                            if (isset($column_labels[$column_key])) {
+                                echo '<th scope="col" class="manage-column" data-column="' . esc_attr($column_key) . '">' . 
+                                     esc_html($column_labels[$column_key]) . '</th>';
+                            }
+                        }
+                        ?>
                         <th scope="col" class="manage-column"><?php echo esc_html__('Acties', 'onderhoudskwaliteit-verbetersessie'); ?></th>
                     </tr>
                 </tfoot>
@@ -308,30 +331,54 @@ class OVM_Admin_Page {
         $truncated_content = $this->truncate_with_formatting($comment->comment_content, 200);
         $full_content_class = strlen($comment->comment_content) > 200 ? 'has-more' : '';
         
+        // Get column order
+        $column_order = get_option('ovm_column_order', array('artikel', 'datum', 'door', 'opmerking', 'reactie'));
+        
         ?>
         <tr data-comment-id="<?php echo esc_attr($comment->id); ?>">
             <th scope="row" class="check-column">
                 <input type="checkbox" name="comment_ids[]" value="<?php echo esc_attr($comment->id); ?>">
             </th>
-            <td>
-                <a href="<?php echo esc_url($post_link); ?>" target="_blank">
-                    <?php echo esc_html($comment->post_title); ?>
-                </a>
-            </td>
-            <td>
-                <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($comment->comment_date))); ?>
-            </td>
-            <td>
-                <span class="ovm-author-name" title="<?php echo esc_attr($comment->author_email); ?>">
-                    <?php echo esc_html($comment->author_name); ?>
-                </span>
-                <?php if ($comment->rating): ?>
-                    <span class="ovm-rating">
-                        <?php echo str_repeat('★', $comment->rating) . str_repeat('☆', 5 - $comment->rating); ?>
-                    </span>
-                <?php endif; ?>
-            </td>
-            <td class="ovm-comment-content <?php echo esc_attr($full_content_class); ?>">
+            <?php
+            // Render all columns in the custom order
+            foreach ($column_order as $column_key) {
+                switch ($column_key) {
+                    case 'artikel':
+                        ?>
+                        <td data-column="artikel">
+                            <a href="<?php echo esc_url($post_link); ?>" target="_blank">
+                                <?php echo esc_html($comment->post_title); ?>
+                            </a>
+                        </td>
+                        <?php
+                        break;
+                        
+                    case 'datum':
+                        ?>
+                        <td data-column="datum">
+                            <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($comment->comment_date))); ?>
+                        </td>
+                        <?php
+                        break;
+                        
+                    case 'door':
+                        ?>
+                        <td data-column="door">
+                            <span class="ovm-author-name" title="<?php echo esc_attr($comment->author_email); ?>">
+                                <?php echo esc_html($comment->author_name); ?>
+                            </span>
+                            <?php if ($comment->rating): ?>
+                                <span class="ovm-rating">
+                                    <?php echo str_repeat('★', $comment->rating) . str_repeat('☆', 5 - $comment->rating); ?>
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <?php
+                        break;
+                        
+                    case 'opmerking':
+                        ?>
+            <td data-column="opmerking" class="ovm-comment-content <?php echo esc_attr($full_content_class); ?>">
                 <div class="ovm-content-display">
                     <div class="ovm-content-truncated">
                         <?php echo nl2br(esc_html($truncated_content)); ?>
@@ -386,7 +433,12 @@ class OVM_Admin_Page {
                 </div>
                 <?php endif; ?>
             </td>
-            <td>
+                        <?php
+                        break;
+                        
+                    case 'reactie':
+                        ?>
+            <td data-column="reactie">
                 <?php if ($status === 'te_verwerken'): ?>
                     <textarea class="ovm-admin-response" 
                               data-comment-id="<?php echo esc_attr($comment->id); ?>"
@@ -403,6 +455,11 @@ class OVM_Admin_Page {
                     </div>
                 <?php endif; ?>
             </td>
+                        <?php
+                        break;
+                }
+            }
+            ?>
             <td>
                 <?php $this->render_action_buttons($comment->id, $status); ?>
             </td>
@@ -480,12 +537,85 @@ class OVM_Admin_Page {
     private function render_settings_tab() {
         $chatgpt_api_key = get_option('ovm_chatgpt_api_key', '');
         $chatgpt_prompt = get_option('ovm_chatgpt_prompt', 'Herschrijf deze tekst maar behoud de toon en zorg dat er geen spelfouten in de tekst zit: [reactie_tekst]');
+        $logo_url = get_option('ovm_logo_url', '');
+        
+        // Get column order settings with default order
+        $default_column_order = array('artikel', 'datum', 'door', 'opmerking', 'reactie');
+        $column_order = get_option('ovm_column_order', $default_column_order);
         ?>
         <div class="ovm-settings-container">
-            <h3><?php echo esc_html__('ChatGPT Instellingen', 'onderhoudskwaliteit-verbetersessie'); ?></h3>
+            <h3><?php echo esc_html__('Export Instellingen', 'onderhoudskwaliteit-verbetersessie'); ?></h3>
             
             <form id="ovm-settings-form" method="post">
                 <?php wp_nonce_field('ovm_save_settings', 'ovm_settings_nonce'); ?>
+                
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row">
+                            <label for="ovm_logo_url"><?php echo esc_html__('Bedrijfslogo URL', 'onderhoudskwaliteit-verbetersessie'); ?></label>
+                        </th>
+                        <td>
+                            <input type="url" 
+                                   id="ovm_logo_url" 
+                                   name="ovm_logo_url" 
+                                   value="<?php echo esc_attr($logo_url); ?>" 
+                                   class="regular-text" 
+                                   placeholder="https://voorbeeld.nl/logo.png" />
+                            <button type="button" class="button button-secondary" id="ovm_upload_logo">
+                                <?php echo esc_html__('Upload Logo', 'onderhoudskwaliteit-verbetersessie'); ?>
+                            </button>
+                            <?php if ($logo_url) : ?>
+                                <div style="margin-top: 10px;">
+                                    <img src="<?php echo esc_url($logo_url); ?>" alt="Logo preview" style="max-height: 60px; max-width: 150px;" />
+                                </div>
+                            <?php endif; ?>
+                            <p class="description">
+                                <?php echo esc_html__('De URL van het bedrijfslogo dat in de PDF export wordt getoond.', 'onderhoudskwaliteit-verbetersessie'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <h3><?php echo esc_html__('Kolom Volgorde', 'onderhoudskwaliteit-verbetersessie'); ?></h3>
+                
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row">
+                            <?php echo esc_html__('Kolom volgorde aanpassen', 'onderhoudskwaliteit-verbetersessie'); ?>
+                        </th>
+                        <td>
+                            <div id="ovm-column-order-container" style="max-width: 400px;">
+                                <p class="description" style="margin-bottom: 10px;">
+                                    <?php echo esc_html__('Sleep de kolommen om de volgorde aan te passen. Checkbox en Acties staan vast.', 'onderhoudskwaliteit-verbetersessie'); ?>
+                                </p>
+                                <ul id="ovm-column-order-list" style="list-style: none; padding: 0; margin: 0;">
+                                    <?php 
+                                    $column_labels = array(
+                                        'artikel' => __('Artikel', 'onderhoudskwaliteit-verbetersessie'),
+                                        'datum' => __('Datum', 'onderhoudskwaliteit-verbetersessie'),
+                                        'door' => __('Door', 'onderhoudskwaliteit-verbetersessie'),
+                                        'opmerking' => __('Opmerking', 'onderhoudskwaliteit-verbetersessie'),
+                                        'reactie' => __('Reactie', 'onderhoudskwaliteit-verbetersessie')
+                                    );
+                                    
+                                    foreach ($column_order as $column_key): 
+                                        if (isset($column_labels[$column_key])): ?>
+                                        <li class="ovm-sortable-column" data-column="<?php echo esc_attr($column_key); ?>" 
+                                            style="background: #f4f6f8; border: 1px solid #c9ccd1; padding: 8px 12px; margin-bottom: 5px; cursor: move; border-radius: 3px;">
+                                            <span class="dashicons dashicons-move" style="margin-right: 8px; color: #666;"></span>
+                                            <?php echo esc_html($column_labels[$column_key]); ?>
+                                        </li>
+                                        <?php endif; 
+                                    endforeach; ?>
+                                </ul>
+                                <input type="hidden" id="ovm_column_order" name="ovm_column_order" 
+                                       value="<?php echo esc_attr(implode(',', $column_order)); ?>" />
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                
+                <h3><?php echo esc_html__('ChatGPT Instellingen', 'onderhoudskwaliteit-verbetersessie'); ?></h3>
                 
                 <table class="form-table">
                     <tr>
@@ -533,6 +663,18 @@ class OVM_Admin_Page {
         if (isset($_POST['save_settings']) && wp_verify_nonce($_POST['ovm_settings_nonce'], 'ovm_save_settings')) {
             update_option('ovm_chatgpt_api_key', sanitize_text_field($_POST['chatgpt_api_key']));
             update_option('ovm_chatgpt_prompt', sanitize_textarea_field($_POST['chatgpt_prompt']));
+            update_option('ovm_logo_url', esc_url_raw($_POST['ovm_logo_url']));
+            
+            // Save column order
+            if (isset($_POST['ovm_column_order'])) {
+                $column_order = explode(',', sanitize_text_field($_POST['ovm_column_order']));
+                // Validate that all columns are present
+                $valid_columns = array('artikel', 'datum', 'door', 'opmerking', 'reactie');
+                $filtered_order = array_intersect($column_order, $valid_columns);
+                if (count($filtered_order) === 5) {
+                    update_option('ovm_column_order', $filtered_order);
+                }
+            }
             
             echo '<div class="notice notice-success is-dismissible"><p>' . 
                  esc_html__('Instellingen opgeslagen!', 'onderhoudskwaliteit-verbetersessie') . 

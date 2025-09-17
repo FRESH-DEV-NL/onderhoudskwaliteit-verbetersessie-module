@@ -1115,6 +1115,62 @@
                 setTimeout(initTouchResizeTextareas, 100);
             }
         });
+        
+        // Initialize column sorting (jQuery UI sortable)
+        if ($('#ovm-column-order-list').length) {
+            $('#ovm-column-order-list').sortable({
+                axis: 'y',
+                placeholder: 'ovm-sortable-placeholder',
+                update: function(event, ui) {
+                    // Update hidden input with new order
+                    var newOrder = [];
+                    $('#ovm-column-order-list li').each(function() {
+                        newOrder.push($(this).data('column'));
+                    });
+                    $('#ovm_column_order').val(newOrder.join(','));
+                }
+            });
+            
+            // Add placeholder styling
+            $('<style>')
+                .text('.ovm-sortable-placeholder { background: #e7f3ff !important; border: 2px dashed #007cba !important; height: 40px; margin-bottom: 5px; }')
+                .appendTo('head');
+        }
+        
+        // Media uploader for logo
+        $('#ovm_upload_logo').on('click', function(e) {
+            e.preventDefault();
+            
+            var mediaUploader = wp.media({
+                title: 'Selecteer bedrijfslogo',
+                button: {
+                    text: 'Gebruik dit logo'
+                },
+                multiple: false,
+                library: {
+                    type: 'image'
+                }
+            });
+            
+            mediaUploader.on('select', function() {
+                var attachment = mediaUploader.state().get('selection').first().toJSON();
+                $('#ovm_logo_url').val(attachment.url);
+                
+                // Update preview
+                var preview = $('#ovm_logo_url').parent().find('img');
+                if (preview.length) {
+                    preview.attr('src', attachment.url);
+                } else {
+                    $('#ovm_logo_url').parent().append(
+                        '<div style="margin-top: 10px;">' +
+                        '<img src="' + attachment.url + '" alt="Logo preview" style="max-height: 60px; max-width: 150px;" />' +
+                        '</div>'
+                    );
+                }
+            });
+            
+            mediaUploader.open();
+        });
     });
 
 })(jQuery);

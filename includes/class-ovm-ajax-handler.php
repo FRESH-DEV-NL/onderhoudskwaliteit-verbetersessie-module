@@ -724,6 +724,9 @@ class OVM_Ajax_Handler {
             // Get export date for title
             $export_date = date('Y-m-d');
             
+            // Get logo URL from settings
+            $logo_url = get_option('ovm_logo_url', '');
+            
             // Build clean HTML content - landscape optimized
             $html = '
             <style>
@@ -736,11 +739,44 @@ class OVM_Ajax_Handler {
                     padding: 0;
                 }
                 
+                .header {
+                    display: table;
+                    width: 100%;
+                    margin-bottom: 10px;
+                }
+                
+                .logo-container {
+                    display: table-cell;
+                    width: 50px;
+                    vertical-align: middle;
+                    padding-right: 10px;
+                }
+                
+                .logo-container img {
+                    max-width: 40px;
+                    max-height: 20px;
+                    height: auto;
+                    width: auto;
+                }
+                
+                .title-container {
+                    display: table-cell;
+                    vertical-align: middle;
+                }
+                
                 h1 {
-                    font-size: 18pt;
+                    font-size: 14pt;
                     font-weight: bold;
-                    margin: 0 0 15px 0;
+                    margin: 0;
                     color: #111;
+                    display: inline;
+                }
+                
+                .date {
+                    font-size: 9pt;
+                    color: #666;
+                    margin-left: 15px;
+                    display: inline;
                 }
                 
                 table {
@@ -773,7 +809,23 @@ class OVM_Ajax_Handler {
                 
             </style>
             
-            <h1>CVS samenvatting - ' . $export_date . '</h1>
+            <div class="header">';
+            
+            // Add logo if available
+            if (!empty($logo_url)) {
+                // Convert logo URL to base64 for better PDF compatibility
+                $logo_data = $this->get_logo_as_base64($logo_url);
+                if ($logo_data) {
+                    $html .= '<div class="logo-container"><img src="' . $logo_data . '" /></div>';
+                }
+            }
+            
+            $html .= '
+                <div class="title-container">
+                    <h1>CVS samenvatting</h1>
+                    <span class="date">' . $export_date . '</span>
+                </div>
+            </div>
             
             <table>
                 <thead>
@@ -806,8 +858,26 @@ class OVM_Ajax_Handler {
             // Write HTML to PDF
             $mpdf->WriteHTML($html);
             
-            // Generate filename
-            $filename = 'CVS samenvatting - ' . $export_date . '.pdf';
+            // Generate filename with subdomain prefix if applicable
+            $site_url = get_site_url();
+            $parsed_url = parse_url($site_url);
+            $host = isset($parsed_url['host']) ? $parsed_url['host'] : '';
+            
+            // Check if it's a subdomain (has more than one dot, excluding www)
+            $host_without_www = preg_replace('/^www\./', '', $host);
+            $dot_count = substr_count($host_without_www, '.');
+            
+            $filename_prefix = '';
+            if ($dot_count > 0) {
+                // Extract subdomain (everything before the first dot)
+                $parts = explode('.', $host_without_www);
+                if (count($parts) > 2 || ($dot_count == 1 && $parts[0] != 'www')) {
+                    // It's a subdomain, use the first part
+                    $filename_prefix = $parts[0] . '-';
+                }
+            }
+            
+            $filename = $filename_prefix . 'CVS samenvatting - ' . $export_date . '.pdf';
             
             // Output PDF as base64 for JavaScript download
             $pdf_content = $mpdf->Output('', 'S');
@@ -821,6 +891,68 @@ class OVM_Ajax_Handler {
             
         } catch (Exception $e) {
             wp_send_json_error(array('message' => 'PDF generatie fout: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * Get logo as base64 data URL
+     */
+    private function get_logo_as_base64($logo_url) {
+        if (empty($logo_url)) {
+            return false;
+        }
+        
+        try {
+            // Try to get image data
+            $image_data = false;
+            
+            // Method 1: Try as WordPress upload
+            $upload_dir = wp_upload_dir();
+            $local_path = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $logo_url);
+            
+            if (file_exists($local_path) && is_readable($local_path)) {
+                $image_data = @file_get_contents($local_path);
+            }
+            
+            // Method 2: If it's an HTTP(S) URL from the same site
+            if (!$image_data && preg_match('/^https?:\/\//i', $logo_url)) {
+                $site_url = get_site_url();
+                if (strpos($logo_url, $site_url) === 0) {
+                    $relative_path = str_replace($site_url, '', $logo_url);
+                    $possible_path = ABSPATH . ltrim($relative_path, '/');
+                    
+                    if (file_exists($possible_path) && is_readable($possible_path)) {
+                        $image_data = @file_get_contents($possible_path);
+                    }
+                }
+            }
+            
+            // Method 3: Try direct file_get_contents (for external URLs)
+            if (!$image_data) {
+                $image_data = @file_get_contents($logo_url);
+            }
+            
+            if ($image_data === false) {
+                return false;
+            }
+            
+            // Get MIME type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime_type = finfo_buffer($finfo, $image_data);
+            finfo_close($finfo);
+            
+            // Only process common image types
+            if (!in_array($mime_type, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+                return false;
+            }
+            
+            // Convert to base64 data URL
+            $base64 = base64_encode($image_data);
+            return "data:$mime_type;base64,$base64";
+            
+        } catch (Exception $e) {
+            error_log('OVM: Logo conversion error: ' . $e->getMessage());
+            return false;
         }
     }
     
