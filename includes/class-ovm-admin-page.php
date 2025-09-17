@@ -337,21 +337,21 @@ class OVM_Admin_Page {
         // Replace problematic characters with proper UTF-8 equivalents
         $replacements = array(
             // Smart quotes
-            '"' => '"',  // Left double quotation mark
-            '"' => '"',  // Right double quotation mark
-            ''' => "'",  // Left single quotation mark
-            ''' => "'",  // Right single quotation mark
+            "\u201C" => '"',  // Left double quotation mark
+            "\u201D" => '"',  // Right double quotation mark
+            "\u2018" => "'",  // Left single quotation mark
+            "\u2019" => "'",  // Right single quotation mark
             
             // En/em dashes
-            '–' => '-',  // En dash
-            '—' => '-',  // Em dash
+            "\u2013" => '-',  // En dash
+            "\u2014" => '-',  // Em dash
             
             // Other common problematic characters
-            '…' => '...',  // Horizontal ellipsis
-            '€' => 'EUR',  // Euro sign fallback
-            '®' => '(R)',  // Registered trademark
-            '©' => '(C)',  // Copyright
-            '™' => '(TM)', // Trademark
+            "\u2026" => '...',  // Horizontal ellipsis
+            "\u20AC" => 'EUR',  // Euro sign fallback
+            "\u00AE" => '(R)',  // Registered trademark
+            "\u00A9" => '(C)',  // Copyright
+            "\u2122" => '(TM)', // Trademark
         );
         
         $text = str_replace(array_keys($replacements), array_values($replacements), $text);
