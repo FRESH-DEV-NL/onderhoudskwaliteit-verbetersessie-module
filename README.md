@@ -12,18 +12,27 @@ Een WordPress plugin voor het beheren van comments/reviews in een gestructureerd
 - WordPress comment verwijdering voor afgeronde items
 
 ### Admin Interface
+- **Aanpasbare kolomvolgorde** via sleep-en-drop interface in instellingen
 - Overzichtelijke tabellen met filtering en bulk acties
 - Inline editable admin reacties (auto-save na 1 seconde)
 - Status-specifieke pagina filtering (toont alleen relevante artikelen per tab)
 - Visuele feedback bij acties
 - Responsive design
 - Afbeelding modal viewer voor ingezonden afbeeldingen
+- **Direct zichtbare instellingen** na opslaan zonder extra refresh
 
 ### ChatGPT Integratie
 - **Instellingen tab** voor OpenAI API configuratie
 - Configureerbare prompt templates met placeholders
 - Automatische reactie generatie via ChatGPT API
 - Direct invullen van gegenereerde reacties in admin velden
+
+### PDF Export
+- **Professionele PDF export** met bedrijfslogo ondersteuning
+- **Landscape A4 formaat** met geoptimaliseerde kolombreedtes (25% elk)
+- **Automatische bestandsnaming** met subdomain prefix
+- **Character encoding fix** voor correcte weergave van speciale tekens
+- Kolommen: Artikel, Door, Opmerking, Antwoord
 
 ### CSV Export
 - Export functionaliteit voor "Klaar voor export" items
@@ -48,7 +57,9 @@ Per comment wordt opgeslagen:
 2. Activeer de plugin via WordPress Admin → Plugins
 3. De database tabel wordt automatisch aangemaakt
 4. Navigeer naar **Settings → Verbetersessie Module**
-5. *(Optioneel)* Configureer ChatGPT API in de Instellingen tab
+5. *(Optioneel)* Upload een bedrijfslogo voor PDF export
+6. *(Optioneel)* Pas de kolomvolgorde aan via sleep-en-drop
+7. *(Optioneel)* Configureer ChatGPT API in de Instellingen tab
 
 ## 💻 Gebruik
 
@@ -57,7 +68,7 @@ Per comment wordt opgeslagen:
 2. Voeg een admin reactie toe (wordt automatisch opgeslagen)
    - *Tip: Gebruik de ChatGPT knop voor automatische reactie generatie*
 3. Verplaats naar "Klaar voor export" wanneer verwerkt
-4. Exporteer naar CSV vanuit "Klaar voor export" tab
+4. **Exporteer naar PDF** vanuit "Klaar voor export" tab (met logo indien geconfigureerd)
 5. Na export, verplaats naar "Afgerond"
 6. *(Optioneel)* Verwijder originele WordPress comments bij afgeronde items
 
@@ -127,6 +138,18 @@ onderhoudskwaliteit-verbetersessie-module/
 - MySQL 5.6 of hoger
 
 ## 🔄 Updates
+
+### Versie 2.0
+- **📄 PDF Export met Logo**: Professionele PDF export met bedrijfslogo ondersteuning
+- **🎨 Aanpasbare Kolom Volgorde**: Sleep-en-drop interface om kolomvolgorde aan te passen
+- **📊 Geoptimaliseerde PDF Layout**: Landscape mode met consistente kolombreedtes en minimale marges
+- **⚙️ Settings Improvements**: Logo upload via WordPress Media Library
+- **🔧 Character Encoding Fix**: Correcte weergave van aanhalingstekens en speciale karakters
+- **📱 Better File Naming**: Automatische subdomain prefix in bestandsnamen (bijv. demo-CVS_samenvatting.pdf)
+- **💾 Settings Persistence**: Direct zichtbare instellingen na opslaan zonder extra refresh
+- **🎯 Fixed Column Widths**: Alle PDF kolommen exact 25% breed voor uniformiteit
+- **🔤 Kleinere Font**: 7pt font size voor meer inhoud per pagina
+- **✨ Consistent Display**: Zelfde character cleaning in admin en PDF export
 
 ### Versie 1.1
 - **ChatGPT Integratie**: Automatische reactie generatie via OpenAI API
