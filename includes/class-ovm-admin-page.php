@@ -736,6 +736,94 @@ class OVM_Admin_Page {
                     </tr>
                 </table>
                 
+                <h3><?php echo esc_html__('Shortcode Instructies', 'onderhoudskwaliteit-verbetersessie'); ?></h3>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <?php echo esc_html__('Basis Shortcode', 'onderhoudskwaliteit-verbetersessie'); ?>
+                        </th>
+                        <td>
+                            <code style="background: #f0f0f1; padding: 5px 10px; border-radius: 3px; font-size: 14px;">
+                                [ovm_afgerond_tabel]
+                            </code>
+                            <p class="description">
+                                <?php echo esc_html__('Plaats deze shortcode op een pagina of bericht om de tabel met afgeronde verbeteringen weer te geven.', 'onderhoudskwaliteit-verbetersessie'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php echo esc_html__('Shortcode Parameters', 'onderhoudskwaliteit-verbetersessie'); ?>
+                        </th>
+                        <td>
+                            <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; border-left: 3px solid #0073aa;">
+                                <p><strong><?php echo esc_html__('Beschikbare parameters:', 'onderhoudskwaliteit-verbetersessie'); ?></strong></p>
+                                <ul style="list-style: disc; margin-left: 20px;">
+                                    <li>
+                                        <code>titel="..."</code> - 
+                                        <?php echo esc_html__('Aangepaste titel voor de tabel (standaard: "Afgeronde Verbeteringen")', 'onderhoudskwaliteit-verbetersessie'); ?>
+                                    </li>
+                                    <li>
+                                        <code>toon_zoekbalk="ja/nee"</code> - 
+                                        <?php echo esc_html__('Toon zoekbalk boven de tabel (standaard: "ja")', 'onderhoudskwaliteit-verbetersessie'); ?>
+                                    </li>
+                                    <li>
+                                        <code>items_per_pagina="10"</code> - 
+                                        <?php echo esc_html__('Aantal items per pagina (standaard: 10)', 'onderhoudskwaliteit-verbetersessie'); ?>
+                                    </li>
+                                    <li>
+                                        <code>taal="nl/en"</code> - 
+                                        <?php echo esc_html__('Taal voor DataTables interface (standaard: "nl")', 'onderhoudskwaliteit-verbetersessie'); ?>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php echo esc_html__('Voorbeelden', 'onderhoudskwaliteit-verbetersessie'); ?>
+                        </th>
+                        <td>
+                            <div style="background: #f0f0f1; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+                                <p><strong><?php echo esc_html__('Basis gebruik:', 'onderhoudskwaliteit-verbetersessie'); ?></strong></p>
+                                <code>[ovm_afgerond_tabel]</code>
+                            </div>
+                            
+                            <div style="background: #f0f0f1; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+                                <p><strong><?php echo esc_html__('Met aangepaste titel:', 'onderhoudskwaliteit-verbetersessie'); ?></strong></p>
+                                <code>[ovm_afgerond_tabel titel="Klantfeedback Verbeteringen"]</code>
+                            </div>
+                            
+                            <div style="background: #f0f0f1; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+                                <p><strong><?php echo esc_html__('Zonder zoekbalk, 20 items per pagina:', 'onderhoudskwaliteit-verbetersessie'); ?></strong></p>
+                                <code>[ovm_afgerond_tabel toon_zoekbalk="nee" items_per_pagina="20"]</code>
+                            </div>
+                            
+                            <div style="background: #f0f0f1; padding: 15px; border-radius: 5px;">
+                                <p><strong><?php echo esc_html__('Volledig aangepast:', 'onderhoudskwaliteit-verbetersessie'); ?></strong></p>
+                                <code>[ovm_afgerond_tabel titel="Verbeterprojecten 2024" toon_zoekbalk="ja" items_per_pagina="15" taal="nl"]</code>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php echo esc_html__('Weergegeven Kolommen', 'onderhoudskwaliteit-verbetersessie'); ?>
+                        </th>
+                        <td>
+                            <p class="description">
+                                <?php echo esc_html__('De tabel toont de volgende kolommen:', 'onderhoudskwaliteit-verbetersessie'); ?>
+                            </p>
+                            <ol style="list-style: decimal; margin-left: 20px;">
+                                <li><?php echo esc_html__('Datum Inzending - Wanneer de opmerking oorspronkelijk is geplaatst', 'onderhoudskwaliteit-verbetersessie'); ?></li>
+                                <li><?php echo esc_html__('Opmerking - De originele feedback van de klant', 'onderhoudskwaliteit-verbetersessie'); ?></li>
+                                <li><?php echo esc_html__('Reactie - De admin reactie op de feedback', 'onderhoudskwaliteit-verbetersessie'); ?></li>
+                                <li><?php echo esc_html__('Afgerond op - Datum waarop de status "Afgerond" is gezet', 'onderhoudskwaliteit-verbetersessie'); ?></li>
+                            </ol>
+                        </td>
+                    </tr>
+                </table>
+                
                 <p class="submit">
                     <input type="submit" 
                            name="save_settings" 

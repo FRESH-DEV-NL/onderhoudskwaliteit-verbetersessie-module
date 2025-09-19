@@ -69,6 +69,7 @@ class Onderhoudskwaliteit_Verbetersessie_Module {
         require_once OVM_PLUGIN_DIR . 'includes/class-ovm-comment-tracker.php';
         require_once OVM_PLUGIN_DIR . 'includes/class-ovm-admin-page.php';
         require_once OVM_PLUGIN_DIR . 'includes/class-ovm-ajax-handler.php';
+        require_once OVM_PLUGIN_DIR . 'includes/class-ovm-shortcode.php';
     }
     
     /**
@@ -78,6 +79,7 @@ class Onderhoudskwaliteit_Verbetersessie_Module {
         $comment_tracker = OVM_Comment_Tracker::get_instance();
         $admin_page = OVM_Admin_Page::get_instance();
         $ajax_handler = OVM_Ajax_Handler::get_instance();
+        $shortcode = OVM_Shortcode::get_instance();
         
         add_action('comment_post', array($comment_tracker, 'track_new_comment'), 10, 3);
         add_action('wp_insert_comment', array($comment_tracker, 'track_inserted_comment'), 10, 2);
