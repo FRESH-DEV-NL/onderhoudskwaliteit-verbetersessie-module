@@ -257,6 +257,7 @@ class OVM_Admin_Page {
             case 'te_verwerken':
                 ?>
                 <option value="move_to_export"><?php echo esc_html__('Verplaats naar "Klaar voor export"', 'onderhoudskwaliteit-verbetersessie'); ?></option>
+                <option value="delete_wp_comments"><?php echo esc_html__('WordPress comments verwijderen', 'onderhoudskwaliteit-verbetersessie'); ?></option>
                 <option value="delete"><?php echo esc_html__('Verwijderen', 'onderhoudskwaliteit-verbetersessie'); ?></option>
                 <?php
                 break;
@@ -528,6 +529,12 @@ class OVM_Admin_Page {
                             data-action="move_to_export" 
                             data-comment-id="<?php echo esc_attr($comment_id); ?>">
                         <?php echo esc_html__('→ Export', 'onderhoudskwaliteit-verbetersessie'); ?>
+                    </button>
+                    <button type="button" class="button button-small button-link-delete ovm-action-btn" 
+                            data-action="delete_wp_comment" 
+                            data-comment-id="<?php echo esc_attr($comment_id); ?>"
+                            onclick="return confirm('Weet je zeker dat je de WordPress comment wilt verwijderen? Dit kan niet ongedaan worden gemaakt.');">
+                        <?php echo esc_html__('WP Comment Verwijderen', 'onderhoudskwaliteit-verbetersessie'); ?>
                     </button>
                     <?php
                     break;
