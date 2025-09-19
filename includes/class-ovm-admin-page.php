@@ -382,8 +382,11 @@ class OVM_Admin_Page {
         // Get column order
         $column_order = get_option('ovm_column_order', array('artikel', 'datum', 'door', 'opmerking', 'reactie'));
         
+        // Check if item is flagged
+        $flagged_class = (!empty($comment->flagged) && $comment->flagged == 1) ? 'ovm-flagged-row' : '';
+        
         ?>
-        <tr data-comment-id="<?php echo esc_attr($comment->id); ?>">
+        <tr data-comment-id="<?php echo esc_attr($comment->id); ?>" class="<?php echo esc_attr($flagged_class); ?>">
             <th scope="row" class="check-column">
                 <input type="checkbox" name="comment_ids[]" value="<?php echo esc_attr($comment->id); ?>">
             </th>
@@ -509,7 +512,7 @@ class OVM_Admin_Page {
             }
             ?>
             <td>
-                <?php $this->render_action_buttons($comment->id, $status); ?>
+                <?php $this->render_action_buttons($comment->id, $status, $comment); ?>
             </td>
         </tr>
         <?php
@@ -518,7 +521,7 @@ class OVM_Admin_Page {
     /**
      * Render action buttons
      */
-    private function render_action_buttons($comment_id, $status) {
+    private function render_action_buttons($comment_id, $status, $comment = null) {
         ?>
         <div class="ovm-actions">
             <?php
@@ -575,6 +578,14 @@ class OVM_Admin_Page {
             <button type="button" class="button button-small ovm-chatgpt-btn" 
                     data-comment-id="<?php echo esc_attr($comment_id); ?>">
                 💬 ChatGPT
+            </button>
+            <?php endif; ?>
+            <?php if ($status === 'klaar_voor_export' && $comment): ?>
+            <button type="button" class="button button-small ovm-flag-btn <?php echo (!empty($comment->flagged) && $comment->flagged == 1) ? 'is-flagged' : ''; ?>" 
+                    data-comment-id="<?php echo esc_attr($comment_id); ?>"
+                    data-action="toggle_flag"
+                    title="<?php echo esc_attr__('Markeer dit item', 'onderhoudskwaliteit-verbetersessie'); ?>">
+                <span class="flag-icon"><?php echo (!empty($comment->flagged) && $comment->flagged == 1) ? '🚩' : '⚑'; ?></span>
             </button>
             <?php endif; ?>
             <button type="button" class="button button-small button-link-delete ovm-delete-btn" 

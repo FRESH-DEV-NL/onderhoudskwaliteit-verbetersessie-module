@@ -57,6 +57,14 @@
             }
         });
 
+        // Flag toggle button
+        $(document).on('click', '.ovm-flag-btn', function(e) {
+            e.preventDefault();
+            const $btn = $(this);
+            const commentId = $btn.data('comment-id');
+            toggleFlag(commentId, $btn);
+        });
+
         // Individual action buttons
         $(document).on('click', '.ovm-action-btn', function(e) {
             e.preventDefault();
@@ -920,6 +928,49 @@
         
         // Re-enable body scrolling
         $('body').removeClass('ovm-modal-open');
+    }
+    
+    /**
+     * Toggle flag status
+     */
+    function toggleFlag(commentId, $btn) {
+        $btn.prop('disabled', true);
+        
+        $.ajax({
+            url: ovm_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ovm_toggle_flag',
+                nonce: ovm_ajax.nonce,
+                comment_id: commentId
+            },
+            success: function(result) {
+                $btn.prop('disabled', false);
+                
+                if (result.success) {
+                    const $row = $btn.closest('tr');
+                    const $flagIcon = $btn.find('.flag-icon');
+                    
+                    if (result.data.flagged) {
+                        $row.addClass('ovm-flagged-row');
+                        $btn.addClass('is-flagged');
+                        $flagIcon.text('🚩');
+                    } else {
+                        $row.removeClass('ovm-flagged-row');
+                        $btn.removeClass('is-flagged');
+                        $flagIcon.text('⚑');
+                    }
+                    
+                    showNotification(result.data.message, 'success');
+                } else {
+                    showNotification(result.data.message || ovm_ajax.strings.error, 'error');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false);
+                showNotification(ovm_ajax.strings.error, 'error');
+            }
+        });
     }
 
     /**

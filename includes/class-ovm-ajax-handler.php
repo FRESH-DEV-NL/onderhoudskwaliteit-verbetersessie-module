@@ -1092,4 +1092,35 @@ class OVM_Ajax_Handler {
         
         return $truncated . '...';
     }
+    
+    /**
+     * Toggle flag status
+     */
+    public function toggle_flag() {
+        $this->verify_ajax_request();
+        
+        $comment_id = isset($_POST['comment_id']) ? intval($_POST['comment_id']) : 0;
+        
+        if (!$comment_id) {
+            wp_send_json_error(array('message' => __('Ongeldige comment ID', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Check if comment exists
+        $comment = $this->data_manager->get_comment($comment_id);
+        if (!$comment) {
+            wp_send_json_error(array('message' => __('Comment niet gevonden', 'onderhoudskwaliteit-verbetersessie')));
+        }
+        
+        // Toggle the flag
+        $new_status = $this->data_manager->toggle_flag($comment_id);
+        
+        if ($new_status !== false) {
+            wp_send_json_success(array(
+                'message' => $new_status ? __('Item gemarkeerd', 'onderhoudskwaliteit-verbetersessie') : __('Markering verwijderd', 'onderhoudskwaliteit-verbetersessie'),
+                'flagged' => $new_status
+            ));
+        } else {
+            wp_send_json_error(array('message' => __('Fout bij togglen van markering', 'onderhoudskwaliteit-verbetersessie')));
+        }
+    }
 }

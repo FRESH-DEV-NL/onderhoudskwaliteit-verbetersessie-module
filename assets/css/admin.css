@@ -745,6 +745,37 @@ body.ovm-modal-open {
     font-style: italic;
 }
 
+/* Flagged items styling */
+.ovm-flagged-row {
+    background-color: #fffbf0 !important;
+}
+
+.ovm-flagged-row:hover {
+    background-color: #fff8e5 !important;
+}
+
+.ovm-flag-btn {
+    padding: 3px 8px !important;
+    background: #f9f9f9 !important;
+    border-color: #ddd !important;
+    min-width: auto !important;
+}
+
+.ovm-flag-btn:hover {
+    background: #f0f0f1 !important;
+    border-color: #999 !important;
+}
+
+.ovm-flag-btn.is-flagged {
+    background: #fffbf0 !important;
+    border-color: #f0ad4e !important;
+}
+
+.ovm-flag-btn .flag-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
 /* Responsive modal */
 @media screen and (max-width: 600px) {
     .ovm-modal-content {

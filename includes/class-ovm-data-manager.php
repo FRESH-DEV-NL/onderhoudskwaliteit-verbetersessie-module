@@ -41,6 +41,9 @@ class OVM_Data_Manager {
         // Ensure table exists on every load
         if (!$this->table_exists()) {
             $this->create_database_table();
+        } else {
+            // Check if flagged column exists and add if not
+            $this->ensure_flagged_column();
         }
     }
     
@@ -58,6 +61,21 @@ class OVM_Data_Manager {
         );
         
         return $table_name === $this->table_name;
+    }
+    
+    /**
+     * Ensure flagged column exists
+     */
+    private function ensure_flagged_column() {
+        global $wpdb;
+        
+        // Check if flagged column exists
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM {$this->table_name} LIKE 'flagged'");
+        
+        if (empty($column_exists)) {
+            // Add the flagged column
+            $wpdb->query("ALTER TABLE {$this->table_name} ADD COLUMN flagged tinyint(1) DEFAULT 0 AFTER status");
+        }
     }
     
     /**
@@ -83,6 +101,11 @@ class OVM_Data_Manager {
                 $wpdb->query("ALTER TABLE {$this->table_name} ADD COLUMN images TEXT DEFAULT NULL AFTER metadata");
             }
             
+            // Add flagged column if it doesn't exist
+            if (!in_array('flagged', $column_names) && $this->table_exists()) {
+                $wpdb->query("ALTER TABLE {$this->table_name} ADD COLUMN flagged tinyint(1) DEFAULT 0 AFTER status");
+            }
+            
             // Use proper SQL syntax for dbDelta
             $sql = "CREATE TABLE {$this->table_name} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -97,6 +120,7 @@ class OVM_Data_Manager {
                 rating int(11) DEFAULT NULL,
                 admin_response longtext DEFAULT NULL,
                 status varchar(50) NOT NULL DEFAULT 'te_verwerken',
+                flagged tinyint(1) DEFAULT 0,
                 status_changed_date datetime DEFAULT NULL,
                 metadata longtext DEFAULT NULL,
                 images text DEFAULT NULL,
@@ -519,6 +543,32 @@ class OVM_Data_Manager {
         }
         
         return $updated;
+    }
+    
+    /**
+     * Toggle flagged status
+     */
+    public function toggle_flag($comment_id) {
+        global $wpdb;
+        
+        // Get current flag status
+        $current = $wpdb->get_var($wpdb->prepare(
+            "SELECT flagged FROM {$this->table_name} WHERE id = %d",
+            $comment_id
+        ));
+        
+        // Toggle the flag
+        $new_status = $current ? 0 : 1;
+        
+        $result = $wpdb->update(
+            $this->table_name,
+            array('flagged' => $new_status),
+            array('id' => $comment_id),
+            array('%d'),
+            array('%d')
+        );
+        
+        return $result !== false ? $new_status : false;
     }
     
     /**

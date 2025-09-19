@@ -97,6 +97,7 @@ class Onderhoudskwaliteit_Verbetersessie_Module {
         add_action('wp_ajax_ovm_import_comments', array($ajax_handler, 'import_comments'));
         add_action('wp_ajax_ovm_export_comments', array($ajax_handler, 'export_comments'));
         add_action('wp_ajax_ovm_update_missing_images', array($ajax_handler, 'update_missing_images'));
+        add_action('wp_ajax_ovm_toggle_flag', array($ajax_handler, 'toggle_flag'));
         
         // Check for database updates
         add_action('admin_init', array($this, 'check_database_version'));
