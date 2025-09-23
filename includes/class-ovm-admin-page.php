@@ -623,7 +623,7 @@ class OVM_Admin_Page {
                 💬 ChatGPT
             </button>
             <?php endif; ?>
-            <?php if ($status === 'klaar_voor_export' && $comment): ?>
+            <?php if (($status === 'te_verwerken' || $status === 'klaar_voor_export') && $comment): ?>
             <button type="button" class="button button-small ovm-flag-btn <?php echo (!empty($comment->flagged) && $comment->flagged == 1) ? 'is-flagged' : ''; ?>" 
                     data-comment-id="<?php echo esc_attr($comment_id); ?>"
                     data-action="toggle_flag"
