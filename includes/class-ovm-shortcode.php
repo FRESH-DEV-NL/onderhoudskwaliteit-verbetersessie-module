@@ -84,6 +84,7 @@ class OVM_Shortcode {
                     <thead>
                         <tr>
                             <th><?php echo esc_html__('Datum Inzending', 'onderhoudskwaliteit-verbetersessie'); ?></th>
+                            <th><?php echo esc_html__('Artikel', 'onderhoudskwaliteit-verbetersessie'); ?></th>
                             <th><?php echo esc_html__('Opmerking', 'onderhoudskwaliteit-verbetersessie'); ?></th>
                             <th><?php echo esc_html__('Reactie', 'onderhoudskwaliteit-verbetersessie'); ?></th>
                             <th><?php echo esc_html__('Afgerond op', 'onderhoudskwaliteit-verbetersessie'); ?></th>
@@ -94,6 +95,17 @@ class OVM_Shortcode {
                             <tr>
                                 <td data-sort="<?php echo esc_attr(strtotime($comment->comment_date)); ?>">
                                     <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($comment->comment_date))); ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $post_link = get_permalink($comment->post_id);
+                                    if ($post_link): ?>
+                                        <a href="<?php echo esc_url($post_link); ?>" target="_blank">
+                                            <?php echo esc_html($comment->post_title); ?>
+                                        </a>
+                                    <?php else: ?>
+                                        <?php echo esc_html($comment->post_title); ?>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <div class="ovm-comment-content">
@@ -139,12 +151,12 @@ class OVM_Shortcode {
                         responsive: true,
                         pageLength: <?php echo intval($atts['items_per_pagina']); ?>,
                         searching: <?php echo ($atts['toon_zoekbalk'] === 'ja') ? 'true' : 'false'; ?>,
-                        order: [[3, 'desc']], // Sort by completion date descending
+                        order: [[4, 'desc']], // Sort by completion date descending (now column 4 instead of 3)
                         language: language,
                         dom: 'lfrtip', // Ensure search box is shown
                         columnDefs: [
                             {
-                                targets: [1, 2], // Opmerking and Reactie columns
+                                targets: [2, 3], // Opmerking and Reactie columns (shifted by 1)
                                 className: 'text-wrap'
                             }
                         ]
@@ -156,8 +168,8 @@ class OVM_Shortcode {
                             var minDate = $('#min-date').val();
                             var maxDate = $('#max-date').val();
                             
-                            // Get the date from the 4th column (Afgerond op)
-                            var dateColumn = data[3]; // Index 3 = 4th column
+                            // Get the date from the 5th column (Afgerond op) - now index 4
+                            var dateColumn = data[4]; // Index 4 = 5th column
                             
                             // If no filters are set, show all
                             if (!minDate && !maxDate) {
@@ -166,7 +178,7 @@ class OVM_Shortcode {
                             
                             // Extract the sort value from data attribute if available
                             var row = table.row(dataIndex).node();
-                            var sortValue = $(row).find('td').eq(3).attr('data-sort');
+                            var sortValue = $(row).find('td').eq(4).attr('data-sort');
                             
                             if (sortValue) {
                                 // Convert timestamp to date string YYYY-MM-DD

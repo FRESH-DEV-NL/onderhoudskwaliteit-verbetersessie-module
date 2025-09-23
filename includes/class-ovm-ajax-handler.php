@@ -109,9 +109,9 @@ class OVM_Ajax_Handler {
         
         // Special handling for delete_wp_comment action
         if ($action === 'delete_wp_comment') {
-            // Check if status is 'afgerond'
-            if ($comment->status !== 'afgerond') {
-                wp_send_json_error(array('message' => __('Alleen afgeronde comments kunnen uit WordPress worden verwijderd', 'onderhoudskwaliteit-verbetersessie')));
+            // Check if status is 'afgerond' or 'te_verwerken'
+            if ($comment->status !== 'afgerond' && $comment->status !== 'te_verwerken') {
+                wp_send_json_error(array('message' => __('Alleen comments met status "Te verwerken" of "Afgerond" kunnen uit WordPress worden verwijderd', 'onderhoudskwaliteit-verbetersessie')));
             }
             
             // Delete WordPress comment if it exists
@@ -198,9 +198,9 @@ class OVM_Ajax_Handler {
                     continue;
                 }
                 
-                // Check if status is 'afgerond'
-                if ($comment->status !== 'afgerond') {
-                    $errors[] = sprintf(__('Comment %d is niet afgerond', 'onderhoudskwaliteit-verbetersessie'), $id);
+                // Check if status is 'afgerond' or 'te_verwerken'
+                if ($comment->status !== 'afgerond' && $comment->status !== 'te_verwerken') {
+                    $errors[] = sprintf(__('Comment %d heeft niet de juiste status (Te verwerken of Afgerond)', 'onderhoudskwaliteit-verbetersessie'), $id);
                     continue;
                 }
                 
@@ -440,6 +440,9 @@ class OVM_Ajax_Handler {
         
         $comment_id = isset($_POST['comment_id']) ? intval($_POST['comment_id']) : 0;
         $content = isset($_POST['content']) ? sanitize_textarea_field($_POST['content']) : '';
+        
+        // Remove magic quotes slashes if they exist
+        $content = wp_unslash($content);
         
         if (!$comment_id) {
             wp_send_json_error(array('message' => __('Ongeldige comment ID', 'onderhoudskwaliteit-verbetersessie')));

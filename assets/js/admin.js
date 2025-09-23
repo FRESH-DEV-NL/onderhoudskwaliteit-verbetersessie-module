@@ -655,9 +655,15 @@
                     const $full = $display.find('.ovm-content-full');
                     const $toggle = $display.find('.ovm-toggle-content');
                     
-                    // Update content with line breaks converted to HTML
-                    $truncated.html(result.data.truncated.replace(/\n/g, '<br>'));
-                    $full.html(result.data.content.replace(/\n/g, '<br>'));
+                    // Update content with proper HTML escaping
+                    const escapeHtml = function(text) {
+                        const div = document.createElement('div');
+                        div.textContent = text;
+                        return div.innerHTML;
+                    };
+                    
+                    $truncated.html(escapeHtml(result.data.truncated).replace(/\n/g, '<br>'));
+                    $full.html(escapeHtml(result.data.content).replace(/\n/g, '<br>'));
                     
                     // Show/hide toggle link
                     if (result.data.has_more) {
