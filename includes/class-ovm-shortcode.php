@@ -68,17 +68,38 @@ class OVM_Shortcode {
             <?php if (empty($comments)): ?>
                 <p class="ovm-no-results"><?php echo esc_html__('Er zijn momenteel geen afgeronde verbeteringen.', 'onderhoudskwaliteit-verbetersessie'); ?></p>
             <?php else: ?>
-                <!-- Date range filter -->
-                <div class="ovm-date-filter">
-                    <label>
-                        <?php echo esc_html__('Periode afgerond datum:', 'onderhoudskwaliteit-verbetersessie'); ?>
-                    </label>
-                    <input type="date" id="min-date" placeholder="Van datum">
-                    <span>-</span>
-                    <input type="date" id="max-date" placeholder="Tot datum">
-                    <button type="button" id="reset-dates" class="button button-small">
-                        <?php echo esc_html__('Reset', 'onderhoudskwaliteit-verbetersessie'); ?>
-                    </button>
+                <!-- Filters -->
+                <div class="ovm-frontend-filters">
+                    <!-- Article filter -->
+                    <div class="ovm-article-filter">
+                        <label for="ovm-article-select">
+                            <?php echo esc_html__('Filter op artikel:', 'onderhoudskwaliteit-verbetersessie'); ?>
+                        </label>
+                        <select id="ovm-article-select" class="ovm-article-select">
+                            <option value=""><?php echo esc_html__('Alle pagina\'s', 'onderhoudskwaliteit-verbetersessie'); ?></option>
+                            <?php 
+                            // Get unique posts from completed comments
+                            $posts = $this->data_manager->get_posts_with_comments('afgerond');
+                            foreach ($posts as $post): ?>
+                                <option value="<?php echo esc_attr($post->post_id); ?>">
+                                    <?php echo esc_html($post->post_title); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <!-- Date range filter -->
+                    <div class="ovm-date-filter">
+                        <label>
+                            <?php echo esc_html__('Periode afgerond datum:', 'onderhoudskwaliteit-verbetersessie'); ?>
+                        </label>
+                        <input type="date" id="min-date" placeholder="Van datum">
+                        <span>-</span>
+                        <input type="date" id="max-date" placeholder="Tot datum">
+                        <button type="button" id="reset-dates" class="button button-small">
+                            <?php echo esc_html__('Reset', 'onderhoudskwaliteit-verbetersessie'); ?>
+                        </button>
+                    </div>
                 </div>
                 <table id="ovm-datatable" class="display responsive nowrap" style="width:100%">
                     <thead>
@@ -92,7 +113,7 @@ class OVM_Shortcode {
                     </thead>
                     <tbody>
                         <?php foreach ($comments as $comment): ?>
-                            <tr>
+                            <tr data-post-id="<?php echo esc_attr($comment->post_id); ?>">
                                 <td data-sort="<?php echo esc_attr(strtotime($comment->comment_date)); ?>">
                                     <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($comment->comment_date))); ?>
                                 </td>
@@ -162,52 +183,64 @@ class OVM_Shortcode {
                         ]
                     });
                     
-                    // Custom date range filtering
+                    // Custom filtering function for both article and date range
                     $.fn.dataTable.ext.search.push(
                         function(settings, data, dataIndex) {
+                            // Article filter
+                            var selectedArticle = $('#ovm-article-select').val();
+                            if (selectedArticle) {
+                                var row = table.row(dataIndex).node();
+                                var postId = $(row).attr('data-post-id');
+                                if (postId !== selectedArticle) {
+                                    return false;
+                                }
+                            }
+                            
+                            // Date range filter
                             var minDate = $('#min-date').val();
                             var maxDate = $('#max-date').val();
                             
                             // Get the date from the 5th column (Afgerond op) - now index 4
                             var dateColumn = data[4]; // Index 4 = 5th column
                             
-                            // If no filters are set, show all
-                            if (!minDate && !maxDate) {
-                                return true;
-                            }
-                            
-                            // Extract the sort value from data attribute if available
-                            var row = table.row(dataIndex).node();
-                            var sortValue = $(row).find('td').eq(4).attr('data-sort');
-                            
-                            if (sortValue) {
-                                // Convert timestamp to date string YYYY-MM-DD
-                                var rowDate = new Date(parseInt(sortValue) * 1000);
-                                var rowDateStr = rowDate.getFullYear() + '-' + 
-                                               String(rowDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                                               String(rowDate.getDate()).padStart(2, '0');
-                            } else {
-                                return true; // Show row if no date
-                            }
-                            
-                            // Check date range
-                            if (minDate && rowDateStr < minDate) {
-                                return false;
-                            }
-                            if (maxDate && rowDateStr > maxDate) {
-                                return false;
+                            // If no date filters are set, pass date check
+                            if (minDate || maxDate) {
+                                // Extract the sort value from data attribute if available
+                                var row = table.row(dataIndex).node();
+                                var sortValue = $(row).find('td').eq(4).attr('data-sort');
+                                
+                                if (sortValue) {
+                                    // Convert timestamp to date string YYYY-MM-DD
+                                    var rowDate = new Date(parseInt(sortValue) * 1000);
+                                    var rowDateStr = rowDate.getFullYear() + '-' + 
+                                                   String(rowDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                                                   String(rowDate.getDate()).padStart(2, '0');
+                                    
+                                    // Check date range
+                                    if (minDate && rowDateStr < minDate) {
+                                        return false;
+                                    }
+                                    if (maxDate && rowDateStr > maxDate) {
+                                        return false;
+                                    }
+                                }
                             }
                             
                             return true;
                         }
                     );
                     
+                    // Event handler for article filter
+                    $('#ovm-article-select').on('change', function() {
+                        table.draw();
+                    });
+                    
                     // Event handlers for date inputs
                     $('#min-date, #max-date').on('change', function() {
                         table.draw();
                     });
                     
-                    // Reset button
+                    // Reset button for dates
                     $('#reset-dates').on('click', function() {
                         $('#min-date').val('');
                         $('#max-date').val('');

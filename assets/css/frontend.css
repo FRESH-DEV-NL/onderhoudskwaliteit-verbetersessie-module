@@ -202,6 +202,21 @@
     .ovm-admin-response {
         max-width: 250px;
     }
+    
+    .ovm-frontend-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .ovm-article-filter,
+    .ovm-date-filter {
+        width: 100%;
+    }
+    
+    .ovm-article-select {
+        min-width: 100%;
+        max-width: 100%;
+    }
 }
 
 /* Empty state */
@@ -212,15 +227,48 @@
     font-style: italic;
 }
 
-/* Date filter styling */
-.ovm-date-filter {
+/* Filters container */
+.ovm-frontend-filters {
     padding: 15px;
     background: #f9f9f9;
     border: 1px solid #ddd;
     margin-bottom: 20px;
     display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+}
+
+/* Article filter styling */
+.ovm-article-filter {
+    display: flex;
     align-items: center;
     gap: 10px;
+    flex: 0 0 auto;
+}
+
+.ovm-article-filter label {
+    font-weight: 500;
+    color: #333;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.ovm-article-select {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    background: #fff;
+    font-size: 14px;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+/* Date filter styling */
+.ovm-date-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
 }
 
 .ovm-date-filter label {
