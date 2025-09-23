@@ -160,7 +160,11 @@
         // Page filter
         $('#ovm-page-filter').on('change', function() {
             const pageId = $(this).val();
-            filterByPage(pageId);
+            // Get current sorting parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderby = urlParams.get('orderby') || 'datum';
+            const order = urlParams.get('order') || 'desc';
+            filterByPage(pageId, orderby, order);
         });
 
         // Comment editing
@@ -535,7 +539,7 @@
     /**
      * Filter by page
      */
-    function filterByPage(pageId) {
+    function filterByPage(pageId, orderby, order) {
         showLoadingOverlay();
         
         $.ajax({
@@ -545,7 +549,9 @@
                 action: 'ovm_filter_by_page',
                 nonce: ovm_ajax.nonce,
                 page_id: pageId,
-                status: currentTab
+                status: currentTab,
+                orderby: orderby || 'datum',
+                order: order || 'desc'
             },
             success: function(result) {
                 hideLoadingOverlay();

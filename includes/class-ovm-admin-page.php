@@ -101,6 +101,8 @@ class OVM_Admin_Page {
      */
     public function render_admin_page() {
         $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'te_verwerken';
+        $orderby = isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'datum';
+        $order = isset($_GET['order']) ? sanitize_text_field($_GET['order']) : 'desc';
         
         ?>
         <div class="wrap ovm-admin-wrap">
@@ -214,10 +216,47 @@ class OVM_Admin_Page {
                             'reactie' => __('Reactie', 'onderhoudskwaliteit-verbetersessie')
                         );
                         
+                        // Get sorting parameters from URL
+                        $current_orderby = isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'datum';
+                        $current_order = isset($_GET['order']) ? sanitize_text_field($_GET['order']) : 'desc';
+                        
+                        // Define sortable columns
+                        $sortable_columns = array('artikel', 'datum', 'door', 'opmerking', 'reactie');
+                        
                         foreach ($column_order as $column_key) {
                             if (isset($column_labels[$column_key])) {
-                                echo '<th scope="col" class="manage-column" data-column="' . esc_attr($column_key) . '">' . 
-                                     esc_html($column_labels[$column_key]) . '</th>';
+                                if (in_array($column_key, $sortable_columns)) {
+                                    // Determine the sorting class and next order
+                                    $sort_class = '';
+                                    $next_order = 'asc';
+                                    if ($current_orderby === $column_key) {
+                                        $sort_class = 'sorted ' . $current_order;
+                                        $next_order = ($current_order === 'asc') ? 'desc' : 'asc';
+                                    } else {
+                                        $sort_class = 'sortable';
+                                    }
+                                    
+                                    // Build the sorting URL - use $tab instead of $current_tab
+                                    $sort_url = add_query_arg(array(
+                                        'page' => 'ovm-settings',
+                                        'tab' => $tab,
+                                        'orderby' => $column_key,
+                                        'order' => $next_order
+                                    ), admin_url('admin.php'));
+                                    
+                                    echo '<th scope="col" class="manage-column column-' . esc_attr($column_key) . ' ' . esc_attr($sort_class) . '" data-column="' . esc_attr($column_key) . '">';
+                                    echo '<a href="' . esc_url($sort_url) . '">';
+                                    echo '<span>' . esc_html($column_labels[$column_key]) . '</span>';
+                                    echo '<span class="sorting-indicators">';
+                                    echo '<span class="sorting-indicator asc" aria-hidden="true"></span>';
+                                    echo '<span class="sorting-indicator desc" aria-hidden="true"></span>';
+                                    echo '</span>';
+                                    echo '</a>';
+                                    echo '</th>';
+                                } else {
+                                    echo '<th scope="col" class="manage-column" data-column="' . esc_attr($column_key) . '">' . 
+                                         esc_html($column_labels[$column_key]) . '</th>';
+                                }
                             }
                         }
                         ?>
@@ -284,7 +323,11 @@ class OVM_Admin_Page {
      * Render comments rows
      */
     private function render_comments_rows($status, $page_id = null) {
-        $comments = $this->data_manager->get_comments_by_status($status, $page_id);
+        // Get sorting parameters
+        $orderby = isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'datum';
+        $order = isset($_GET['order']) ? sanitize_text_field($_GET['order']) : 'desc';
+        
+        $comments = $this->data_manager->get_comments_by_status($status, $page_id, $orderby, $order);
         
         if (empty($comments)) {
             ?>

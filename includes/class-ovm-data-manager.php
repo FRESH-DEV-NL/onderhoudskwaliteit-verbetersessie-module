@@ -297,7 +297,7 @@ class OVM_Data_Manager {
     /**
      * Get comments by status
      */
-    public function get_comments_by_status($status = 'te_verwerken', $page_id = null) {
+    public function get_comments_by_status($status = 'te_verwerken', $page_id = null, $orderby = 'datum', $order = 'desc') {
         global $wpdb;
         
         $where = $wpdb->prepare("WHERE status = %s", $status);
@@ -306,7 +306,22 @@ class OVM_Data_Manager {
             $where .= $wpdb->prepare(" AND post_id = %d", $page_id);
         }
         
-        $query = "SELECT * FROM {$this->table_name} {$where} ORDER BY comment_date DESC";
+        // Map column names to database fields
+        $orderby_mapping = array(
+            'artikel' => 'post_title',
+            'datum' => 'comment_date',
+            'door' => 'author_name',
+            'opmerking' => 'comment_content',
+            'reactie' => 'admin_response'
+        );
+        
+        // Default to comment_date if invalid orderby
+        $orderby_field = isset($orderby_mapping[$orderby]) ? $orderby_mapping[$orderby] : 'comment_date';
+        
+        // Validate order direction
+        $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+        
+        $query = "SELECT * FROM {$this->table_name} {$where} ORDER BY {$orderby_field} {$order}";
         
         return $wpdb->get_results($query);
     }

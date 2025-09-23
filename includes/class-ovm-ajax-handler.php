@@ -268,6 +268,10 @@ class OVM_Ajax_Handler {
         $page_id = isset($_POST['page_id']) ? intval($_POST['page_id']) : null;
         $status = isset($_POST['status']) ? sanitize_text_field($_POST['status']) : 'te_verwerken';
         
+        // Set the sorting parameters in GET for the render method to use
+        $_GET['orderby'] = isset($_POST['orderby']) ? sanitize_text_field($_POST['orderby']) : 'datum';
+        $_GET['order'] = isset($_POST['order']) ? sanitize_text_field($_POST['order']) : 'desc';
+        
         ob_start();
         $admin_page = OVM_Admin_Page::get_instance();
         $method = new ReflectionMethod($admin_page, 'render_comments_rows');
