@@ -639,6 +639,12 @@ class OVM_Ajax_Handler {
             ));
         }
         
+        $progress = 100;
+        if ($total_comments > 0) {
+            $percentage = ($new_offset * 100) / $total_comments;
+            $progress = intval($percentage);
+        }
+        
         $response_data = array(
             'imported_in_batch' => $imported_in_batch,
             'skipped_in_batch' => $skipped_in_batch,
@@ -646,7 +652,7 @@ class OVM_Ajax_Handler {
             'total_comments' => $total_comments,
             'offset' => $new_offset,
             'has_more' => $has_more,
-            'progress_percentage' => $total_comments > 0 ? round(($new_offset / $total_comments) * 100) : 100
+            'progress_percentage' => $progress
         );
         
         if (!$has_more) {
