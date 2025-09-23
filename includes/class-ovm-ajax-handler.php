@@ -749,54 +749,68 @@ class OVM_Ajax_Handler {
                     padding: 0;
                 }
                 
+                /* Header styling - table layout for logo and centered title */
                 .header {
-                    display: table;
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #333;
+                }
+                
+                .header-table {
                     width: 100%;
-                    margin-bottom: 10px;
+                    border-collapse: collapse;
                 }
                 
-                .logo-container {
-                    display: table-cell;
-                    width: 50px;
+                .header-table td {
+                    border: none;
+                    padding: 0;
                     vertical-align: middle;
-                    padding-right: 10px;
                 }
                 
-                .logo-container img {
-                    max-width: 40px;
-                    max-height: 20px;
-                    height: auto;
+                .header-logo-cell {
+                    width: 100px;
+                    text-align: left;
+                }
+                
+                .header-center-cell {
+                    text-align: center;
+                }
+                
+                .header-right-cell {
+                    width: 100px;
+                    text-align: right;
+                }
+                
+                .header h1 {
+                    color: #000066;
+                    margin: 0;
+                    font-size: 12pt;
+                    font-weight: bold;
+                }
+                
+                .header p {
+                    margin: 2px 0;
+                    color: #333;
+                    font-size: 8pt;
+                }
+                
+                .logo {
+                    max-height: 40px;
+                    max-width: 90px;
+                    height: 40px;
                     width: auto;
                 }
                 
-                .title-container {
-                    display: table-cell;
-                    vertical-align: middle;
-                }
-                
-                h1 {
-                    font-size: 14pt;
-                    font-weight: bold;
-                    margin: 0;
-                    color: #111;
-                    display: inline;
-                }
-                
-                .date {
-                    font-size: 9pt;
-                    color: #666;
-                    margin-left: 15px;
-                    display: inline;
-                }
-                
-                table {
+                /* Main data table styling */
+                .data-table {
                     width: 100%;
                     border-collapse: collapse;
                     margin-top: 8px;
                     table-layout: fixed;
                 }
                 
-                th, td {
+                .data-table th, 
+                .data-table td {
                     text-align: left;
                     vertical-align: top;
                     padding: 5px 3px;
@@ -807,7 +821,7 @@ class OVM_Ajax_Handler {
                     line-height: 1.1;
                 }
                 
-                th {
+                .data-table th {
                     font-weight: bold;
                     background-color: #F4F6F8;
                     font-size: 7pt;
@@ -829,25 +843,35 @@ class OVM_Ajax_Handler {
                 
             </style>
             
-            <div class="header">';
+            <!-- Header with table layout for logo and centered title -->
+            <div class="header">
+                <table class="header-table">
+                    <tr>
+                        <td class="header-logo-cell">';
             
             // Add logo if available
             if (!empty($logo_url)) {
                 // Convert logo URL to base64 for better PDF compatibility
                 $logo_data = $this->get_logo_as_base64($logo_url);
                 if ($logo_data) {
-                    $html .= '<div class="logo-container"><img src="' . $logo_data . '" /></div>';
+                    $html .= '<img src="' . $logo_data . '" class="logo" alt="Bedrijfslogo" />';
                 }
             }
             
             $html .= '
-                <div class="title-container">
-                    <h1>CVS samenvatting</h1>
-                    <span class="date">' . $export_date . '</span>
-                </div>
+                        </td>
+                        <td class="header-center-cell">
+                            <h1>CVS Samenvatting</h1>
+                            <p><strong>Gegenereerd op:</strong> ' . date('d-m-Y') . '</p>
+                        </td>
+                        <td class="header-right-cell">
+                            <!-- Empty cell for balance -->
+                        </td>
+                    </tr>
+                </table>
             </div>
             
-            <table>
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th class="col-artikel">Artikel</th>
