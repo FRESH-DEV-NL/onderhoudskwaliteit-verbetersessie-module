@@ -71,24 +71,24 @@
             const $btn = $(this);
             const action = $btn.data('action');
             const commentId = $btn.data('comment-id');
-            
+
             // Special handling for delete_wp_comment
             if (action === 'delete_wp_comment') {
                 // Confirmation is handled in the onclick attribute
                 changeCommentStatus(commentId, action, $btn);
                 return;
             }
-            
+
             // Check if response is required for move to export
             if (action === 'move_to_export') {
                 const $response = $btn.closest('tr').find('.ovm-admin-response');
-                if (!$response.val().trim()) {
+                if ($response.length && !$response.val().trim()) {
                     alert(ovm_ajax.strings.no_response_required);
                     $response.focus();
                     return;
                 }
             }
-            
+
             changeCommentStatus(commentId, action, $btn);
         });
 
@@ -134,13 +134,13 @@
                 checkedBoxes.each(function() {
                     const $row = $(this).closest('tr');
                     const $response = $row.find('.ovm-admin-response');
-                    if (!$response.val().trim()) {
+                    if ($response.length && !$response.val().trim()) {
                         missingResponse = true;
                         $response.addClass('error');
                         return false;
                     }
                 });
-                
+
                 if (missingResponse) {
                     alert(ovm_ajax.strings.no_response_required);
                     return;
