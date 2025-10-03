@@ -3,7 +3,7 @@
  * Plugin Name: Onderhoudskwaliteit Verbetersessie Module
  * Plugin URI: https://fresh-dev.nl
  * Description: Beheert WordPress comments/reviews in een workflow systeem met drie statussen voor verbetersessies.
- * Version: 2.3
+ * Version: 2.4
  * Author: Fresh-Dev
  * Text Domain: onderhoudskwaliteit-verbetersessie
  * Domain Path: /languages
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('OVM_VERSION', '2.3');
+define('OVM_VERSION', '2.4');
 define('OVM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('OVM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('OVM_PLUGIN_FILE', __FILE__);
