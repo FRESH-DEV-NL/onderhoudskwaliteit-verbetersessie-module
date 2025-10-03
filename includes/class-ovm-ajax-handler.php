@@ -733,12 +733,12 @@ class OVM_Ajax_Handler {
             ]);
             
             // Set document information (minimal)
-            $mpdf->SetTitle('CVS samenvatting - ' . date('Y-m-d'));
+            $mpdf->SetTitle('CVS samenvatting - ' . date('d-m-Y'));
             $mpdf->SetAuthor('');
             $mpdf->SetCreator('');
             
             // Get export date for title
-            $export_date = date('Y-m-d');
+            $export_date = date('d-m-Y');
             
             // Get logo URL from settings
             $logo_url = get_option('ovm_logo_url', '');
@@ -834,12 +834,18 @@ class OVM_Ajax_Handler {
                     padding: 3px;
                 }
                 
-                /* Alle kolommen exact dezelfde breedte - 25% elk */
-                .col-artikel, 
-                .col-door, 
-                .col-opmerking, 
+                /* Aangepaste kolom breedtes voor betere verhoudingen */
+                .col-artikel { 
+                    width: 15%; 
+                }
+                .col-door { 
+                    width: 15%; 
+                }
+                .col-opmerking { 
+                    width: 35%; 
+                }
                 .col-antwoord { 
-                    width: 25%; 
+                    width: 35%; 
                 }
                 
                 .col-artikel {

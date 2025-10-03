@@ -30,6 +30,7 @@
 #ovm-datatable {
     border-collapse: separate !important;
     border-spacing: 0;
+    width: 100%;
 }
 
 #ovm-datatable thead th {
@@ -39,6 +40,44 @@
     padding: 12px 10px;
     border-bottom: 2px solid #ddd;
     font-size: 14px;
+}
+
+/* Column width adjustments with DataTables override */
+#ovm-datatable thead th:nth-child(1),
+#ovm-datatable tbody td:nth-child(1) {
+    width: 10% !important; /* Datum column */
+    max-width: 100px !important;
+}
+
+#ovm-datatable thead th:nth-child(2),
+#ovm-datatable tbody td:nth-child(2) {
+    width: 20% !important; /* Artikel column */
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    max-width: 200px !important;
+}
+
+#ovm-datatable thead th:nth-child(3),
+#ovm-datatable tbody td:nth-child(3) {
+    width: 30% !important; /* Opmerking column */
+}
+
+#ovm-datatable thead th:nth-child(4),
+#ovm-datatable tbody td:nth-child(4) {
+    width: 30% !important; /* Reactie column */
+}
+
+#ovm-datatable thead th:nth-child(5),
+#ovm-datatable tbody td:nth-child(5) {
+    width: 10% !important; /* Afgerond op column */
+    max-width: 100px !important;
+}
+
+/* Text wrap for long content */
+.text-wrap {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
 }
 
 #ovm-datatable tbody td {

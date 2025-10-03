@@ -115,7 +115,7 @@ class OVM_Shortcode {
                         <?php foreach ($comments as $comment): ?>
                             <tr data-post-id="<?php echo esc_attr($comment->post_id); ?>">
                                 <td data-sort="<?php echo esc_attr(strtotime($comment->comment_date)); ?>">
-                                    <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($comment->comment_date))); ?>
+                                    <?php echo esc_html(date_i18n('d-m-Y', strtotime($comment->comment_date))); ?>
                                 </td>
                                 <td>
                                     <?php 
@@ -151,7 +151,7 @@ class OVM_Shortcode {
                                 <td data-sort="<?php echo esc_attr(strtotime($comment->status_changed_date)); ?>">
                                     <?php 
                                     if (!empty($comment->status_changed_date)) {
-                                        echo esc_html(date_i18n(get_option('date_format'), strtotime($comment->status_changed_date)));
+                                        echo esc_html(date_i18n('d-m-Y', strtotime($comment->status_changed_date)));
                                     } else {
                                         echo '-';
                                     }
@@ -170,6 +170,7 @@ class OVM_Shortcode {
                     // Initialize DataTable
                     var table = $('#ovm-datatable').DataTable({
                         responsive: true,
+                        autoWidth: false,
                         pageLength: <?php echo intval($atts['items_per_pagina']); ?>,
                         searching: <?php echo ($atts['toon_zoekbalk'] === 'ja') ? 'true' : 'false'; ?>,
                         order: [[4, 'desc']], // Sort by completion date descending (now column 4 instead of 3)
@@ -177,8 +178,27 @@ class OVM_Shortcode {
                         dom: 'lfrtip', // Ensure search box is shown
                         columnDefs: [
                             {
-                                targets: [2, 3], // Opmerking and Reactie columns (shifted by 1)
+                                targets: 0, // Datum column
+                                width: '10%'
+                            },
+                            {
+                                targets: 1, // Artikel column
+                                width: '20%',
                                 className: 'text-wrap'
+                            },
+                            {
+                                targets: 2, // Opmerking column
+                                width: '30%',
+                                className: 'text-wrap'
+                            },
+                            {
+                                targets: 3, // Reactie column  
+                                width: '30%',
+                                className: 'text-wrap'
+                            },
+                            {
+                                targets: 4, // Afgerond op column
+                                width: '10%'
                             }
                         ]
                     });

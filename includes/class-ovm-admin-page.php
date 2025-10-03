@@ -450,7 +450,7 @@ class OVM_Admin_Page {
                     case 'datum':
                         ?>
                         <td data-column="datum">
-                            <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($comment->comment_date))); ?>
+                            <?php echo esc_html(date_i18n('d-m-Y', strtotime($comment->comment_date))); ?>
                         </td>
                         <?php
                         break;
