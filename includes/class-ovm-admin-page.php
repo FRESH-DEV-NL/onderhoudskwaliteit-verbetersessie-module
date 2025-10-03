@@ -537,12 +537,12 @@ class OVM_Admin_Page {
                     <textarea class="ovm-admin-response" 
                               data-comment-id="<?php echo esc_attr($comment->id); ?>"
                               placeholder="<?php echo esc_attr__('Typ je reactie...', 'onderhoudskwaliteit-verbetersessie'); ?>"
-                              rows="3"><?php echo esc_textarea($comment->admin_response); ?></textarea>
+                              rows="3"><?php echo esc_textarea(stripslashes($comment->admin_response)); ?></textarea>
                     <span class="ovm-save-indicator"></span>
                 <?php else: ?>
                     <div class="ovm-admin-response-readonly">
                         <?php if (!empty($comment->admin_response)): ?>
-                            <?php echo nl2br(esc_html($comment->admin_response)); ?>
+                            <?php echo nl2br(esc_html(stripslashes($comment->admin_response))); ?>
                         <?php else: ?>
                             <em><?php echo esc_html__('Geen reactie', 'onderhoudskwaliteit-verbetersessie'); ?></em>
                         <?php endif; ?>

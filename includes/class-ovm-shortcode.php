@@ -142,7 +142,7 @@ class OVM_Shortcode {
                                 <td>
                                     <?php if (!empty($comment->admin_response)): ?>
                                         <div class="ovm-admin-response">
-                                            <?php echo nl2br(esc_html($this->fix_text_encoding($comment->admin_response))); ?>
+                                            <?php echo nl2br(esc_html($this->fix_text_encoding(stripslashes($comment->admin_response)))); ?>
                                         </div>
                                     <?php else: ?>
                                         <em><?php echo esc_html__('Geen reactie', 'onderhoudskwaliteit-verbetersessie'); ?></em>

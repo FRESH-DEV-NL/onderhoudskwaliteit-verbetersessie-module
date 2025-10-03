@@ -58,7 +58,8 @@ class OVM_Ajax_Handler {
         $this->verify_ajax_request();
         
         $comment_id = isset($_POST['comment_id']) ? intval($_POST['comment_id']) : 0;
-        $response = isset($_POST['response']) ? sanitize_textarea_field($_POST['response']) : '';
+        // Use stripslashes to remove escape characters added by magic quotes or form submission
+        $response = isset($_POST['response']) ? wp_unslash($_POST['response']) : '';
         
         if (!$comment_id) {
             wp_send_json_error(array('message' => __('Ongeldige comment ID', 'onderhoudskwaliteit-verbetersessie')));
@@ -900,7 +901,7 @@ class OVM_Ajax_Handler {
                 $post_title = $this->fix_text_encoding($comment->post_title);
                 $author_name = $this->fix_text_encoding($comment->author_name);
                 $comment_content = $this->fix_text_encoding($comment->comment_content);
-                $admin_response = $this->fix_text_encoding($comment->admin_response ?: '-');
+                $admin_response = $this->fix_text_encoding(stripslashes($comment->admin_response ?: '-'));
                 
                 $html .= '<tr>';
                 $html .= '<td class="col-artikel">' . htmlspecialchars($post_title, ENT_QUOTES, 'UTF-8') . '</td>';
